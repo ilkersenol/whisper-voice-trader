@@ -1,0 +1,37 @@
+# UI Framework
+PyQt5==5.15.9
+#pyqt5-tools==5.15.9.3.3
+
+
+# Speech Recognition
+openai-whisper==20231117
+torch>=2.2.0,<2.10
+torchaudio>=2.2.0,<2.10
+pyaudio==0.2.14
+SpeechRecognition==3.10.1
+
+
+
+# Text-to-Speech
+pyttsx3==2.90
+
+# Exchange APIs
+ccxt==4.2.9
+websocket-client==1.7.0
+requests==2.31.0
+
+# Database
+sqlalchemy==2.0.25
+
+# Security
+cryptography==42.0.2
+
+# Utilities
+python-dotenv==1.0.1
+
+# Data & Analysis (V2.0)
+pandas==2.1.4
+matplotlib==3.8.2
+plotly==5.18.0
+reportlab==4.0.9
+openpyxl==3.1.2

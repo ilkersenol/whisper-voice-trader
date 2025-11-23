@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Database verification test"""
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database.db_manager import DatabaseManager
+
+def test_database():
+    """Test database functionality"""
+    print("\n" + "="*60)
+    print("DATABASE VERIFICATION TEST")
+    print("="*60)
+    
+    db = DatabaseManager()
+    
+    # Test 1: Check tables
+    print("\n1. Checking tables...")
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    tables = [row[0] for row in cursor.fetchall()]
+    print(f"   Found {len(tables)} tables:")
+    for table in tables:
+        print(f"   - {table}")
+    
+    # Test 2: Check settings
+    print("\n2. Checking settings...")
+    settings = db.get_all_settings()
+    print(f"   Settings count: {len(settings)}")
+    print(f"   Wake word: {settings.get('wake_word')}")
+    print(f"   Paper trading: {settings.get('paper_trading')}")
+    print(f"   Default exchange: {settings.get('default_exchange')}")
+    
+    # Test 3: Check exchanges
+    print("\n3. Checking exchanges...")
+    cursor.execute("SELECT name, is_active, environment FROM exchanges")
+    exchanges = cursor.fetchall()
+    for name, active, env in exchanges:
+        status = "ACTIVE" if active else "inactive"
+        print(f"   - {name}: {status} ({env})")
+    
+    # Test 4: Check command keywords
+    print("\n4. Checking command keywords...")
+    keywords = db.get_keywords_by_category('buy', 'tr')
+    print(f"   Buy keywords (TR): {', '.join(keywords)}")
+    keywords = db.get_keywords_by_category('sell', 'tr')
+    print(f"   Sell keywords (TR): {', '.join(keywords)}")
+    keywords = db.get_keywords_by_category('close', 'tr')
+    print(f"   Close keywords (TR): {', '.join(keywords)}")
+    
+    # Test 5: Test CRUD operations
+    print("\n5. Testing CRUD operations...")
+    
+    # Insert test order
+    order_id = db.insert_order(
+        exchange='binance',
+        symbol='BTC/USDT',
+        side='buy',
+        order_type='market',
+        quantity=0.001,
+        leverage=10,
+        is_paper_trade=True,
+        voice_command='BTC al 100 market'
+    )
+    print(f"   Order created: ID={order_id}")
+    
+    # Update order
+    db.update_order_status(order_id, 'filled', 0.001, 50000.0)
+    print(f"   Order updated: status=filled")
+    
+    # Read order
+    order = db.get_order(order_id)
+    print(f"   Order read: {order['symbol']} {order['side']} - {order['status']}")
+    
+    # Insert test position
+    position_id = db.insert_position(
+        exchange='binance',
+        symbol='BTC/USDT',
+        side='long',
+        leverage=10,
+        entry_price=50000.0,
+        quantity=0.001,
+        is_paper_trade=True
+    )
+    print(f"   Position created: ID={position_id}")
+    
+    # Get balance
+    balance = db.get_account_balance(is_paper_trade=True)
+    print(f"   Paper balance: ${balance['current_balance']:.2f}")
+    
+    print("\n" + "="*60)
+    print("ALL TESTS PASSED ✅")
+    print("="*60 + "\n")
+
+if __name__ == "__main__":
+    test_database()

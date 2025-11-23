@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Database
+data/database/*.db
+data/database/*.db-journal
+
+# Logs
+data/logs/*.log
+
+# Config
+data/config/*.enc
+data/config/*.dat
+data/config/settings.json
+
+# Whisper Models
+data/whisper_models/*.pt
+
+# UI Generated
+ui/generated/*.py
+
+# Translation Compiled
+translations/compiled/*.qm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment
+build/
+dist/
+*.spec
