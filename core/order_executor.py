@@ -339,20 +339,53 @@ class OrderExecutor:
     ) -> None:
         """
         Emir ve sonucu orders tablosuna yazar.
-
-        ÖNEMLİ:
-        - database/schema.sql içinde orders tablosunun kesin kolon isimleri
-          görülmeden burada SQL yazmıyoruz.
-        - Sadece DB tarafı için tek giriş noktası sağlıyoruz.
         """
-        # TODO:
-        #  - schema.sql açılıp orders tablosu kolonları netleştirilecek.
-        #  - DatabaseManager.execute(...) ile insert yapılacak.
-        raise NotImplementedError("record_order için orders tablosu şeması gerekli.")
+        try:
+            order_data = {
+                "exchange": self.exchange.active_exchange,
+                "exchange_order_id": result.order_id,
+                "symbol": params.symbol,
+                "side": params.side,
+                "type": params.order_type,
+                "quantity": qty,
+                "price": params.price,
+                "stop_price": None,
+                "leverage": params.leverage,
+                "status": result.status or ("ERROR" if not result.success else "OK"),
+                "filled_quantity": result.filled_qty,
+                "average_fill_price": result.avg_price,
+                "commission": None,
+                "commission_asset": None,
+                "position_id": None,
+                "is_paper_trade": 1 if self._paper_trading_enabled else 0,
+                "voice_command": params.extra.get("voice_command"),
+            }
 
-    # ------------------------------------------------------------------
-    # Internal: paper / real branching
-    # ------------------------------------------------------------------
+            order_id = self.db.insert_order(order_data)
+
+            # Sistem loguna da yazalım
+            self.db.insert_system_log(
+                level="INFO" if result.success else "ERROR",
+                message=f"Order recorded (order_id={order_id})",
+                context={
+                    "symbol": params.symbol,
+                    "side": params.side,
+                    "qty": qty,
+                    "price": params.price,
+                    "result": result.raw,
+                }
+            )
+
+            return order_id
+
+        except Exception as e:
+            self.db.insert_system_log(
+                level="ERROR",
+                message="record_order failed",
+                context={"error": str(e)}
+            )
+            raise
+
 
     def _execute_paper_order(
         self,
