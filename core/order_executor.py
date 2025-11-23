@@ -328,7 +328,8 @@ class OrderExecutor:
             raise OrderExecutionError("Bakiye bilgisi geçersiz formatta")
 
         free_balance = balance_info.get("free")
-        asset = balance_info.get("asset", "USDT")
+        asset = balance_info.get("currency", "USDT")
+
 
         if free_balance is None:
             raise OrderExecutionError("Bakiye bilgisi hatalı veya eksik (free alanı yok)")
@@ -430,17 +431,45 @@ class OrderExecutor:
     ) -> OrderResult:
         """
         Gerçek exchange (CCXT / ExchangeManager) üzerinden emir çalıştırma.
-
-        NOT:
-        - ExchangeManager'a 'create_order' benzeri bir giriş noktası
-          eklendikten sonra burası doldurulacak.
         """
-        # TODO: core/exchange_manager.py arayüzü genişletilip
-        # CCXT order creation netleştiğinde implement edilecek.
-        raise NotImplementedError("_execute_real_order, ExchangeManager order arayüzü netleşince implement edilecek.")
+        try:
+            order_type = params.order_type.lower()
+            side = params.side.lower()
 
-    # ------------------------------------------------------------------
-    # Misc helpers
+            # Market emir için price=None; limit için params.price kullanıyoruz
+            price: Optional[float] = None
+            if order_type == "limit":
+                price = params.price
+                if price is None:
+                    raise OrderValidationError("Limit emir için fiyat gerekli.")
+
+            raw_order = self.exchange.create_order(
+                symbol=params.symbol,
+                side=side,
+                order_type=order_type,
+                amount=qty,
+                price=price,
+                params=params.extra or {},
+            )
+
+            order_id = raw_order.get("id") or raw_order.get("orderId")
+            status = raw_order.get("status")
+            filled = raw_order.get("filled") or raw_order.get("amount")
+            avg_price = raw_order.get("average") or raw_order.get("price")
+
+            return OrderResult(
+                success=True,
+                order_id=str(order_id) if order_id is not None else None,
+                status=status,
+                filled_qty=float(filled) if filled is not None else None,
+                avg_price=float(avg_price) if avg_price is not None else None,
+                raw=raw_order,
+            )
+
+        except Exception as e:
+            self.logger.error("Real order execution failed: %s", e, exc_info=True)
+            raise OrderExecutionError(str(e))
+
     # ------------------------------------------------------------------
 
     def _get_effective_price(self, params: OrderParams) -> float:

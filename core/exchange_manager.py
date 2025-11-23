@@ -270,6 +270,63 @@ class ExchangeManager:
         except Exception as e:
             logger.error(f"Error fetching ticker for {symbol}: {e}")
             return {}
+        
+    def create_order(
+        self,
+        symbol: str,
+        side: str,
+        order_type: str,
+        amount: float,
+        price: Optional[float] = None,
+        params: Optional[Dict[str, Any]] = None,
+        exchange_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Unified order creation wrapper over ccxt.create_order.
+
+        Args:
+            symbol: Normalized trading symbol (örn: 'BTC/USDT', 'BTC/USDT:USDT')
+            side: 'buy' veya 'sell'
+            order_type: 'market' veya 'limit'
+            amount: Emir miktarı (qty)
+            price: Limit emirler için fiyat, market için None
+            params: Exchange-specific ccxt params
+            exchange_name: Hangi exchange (None → active_exchange)
+
+        Returns:
+            dict: ccxt order objesi (raw)
+        """
+        try:
+            exchange = self.get_exchange(exchange_name)
+            if not exchange:
+                raise RuntimeError("No exchange available for create_order")
+
+            side = side.lower()
+            order_type = order_type.lower()
+            params = params or {}
+
+            # ccxt unified create_order:
+            # create_order(symbol, type, side, amount, price=None, params={})
+            if order_type == "market":
+                # Market emir için price None geçilir
+                order = exchange.create_order(symbol, order_type, side, amount, None, params)
+            else:
+                order = exchange.create_order(symbol, order_type, side, amount, price, params)
+
+            logger.info(
+                "Order created on %s: %s %s %s @ %s",
+                self.active_exchange,
+                side,
+                amount,
+                symbol,
+                price,
+            )
+            return order
+
+        except Exception as e:
+            logger.error(f"Error creating order on {self.active_exchange}: {e}", exc_info=True)
+            raise
+
     
     def get_markets(self, exchange_name: Optional[str] = None) -> List[str]:
         """
