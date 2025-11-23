@@ -23,6 +23,7 @@ from utils import validators
 from utils.config_manager import ConfigManager
 from database.db_manager import DatabaseManager
 from core.exchange_manager import get_exchange_manager, ExchangeManager
+from core.paper_trading_engine import PaperTradingEngine
 
 
 OrderSide = Literal["buy", "sell"]
@@ -105,7 +106,8 @@ class OrderExecutor:
         self.db = db_manager
         self.config = config_manager
         self.exchange: ExchangeManager = exchange_manager or get_exchange_manager()
-        self.paper_engine = paper_trading_engine
+        self.paper_engine = paper_trading_engine or PaperTradingEngine(logger=self.logger)
+
 
         # UI veya Preferences tarafından set edilecek flag
         self._paper_trading_enabled: bool = False
@@ -309,18 +311,21 @@ class OrderExecutor:
 
     def check_balance(self, required_margin: float) -> None:
         """
-        Gerekli margin için bakiye kontrolü.
-        ExchangeManager.get_balance() dönüşü:
-        {
-            "total": float,
-            "free": float,
-            "used": float,
-            "asset": "USDT"
-        }
-        formatında olmalıdır.
+        Gerekli marj için bakiye kontrolü.
+
+        - Paper mod açıksa → gerçek borsa bakiyesini kontrol ETME.
+        - Gerçek modda → ExchangeManager.get_balance() üzerinden kontrol et.
         """
         if required_margin <= 0:
             raise OrderValidationError("Gerekli marj sıfır veya negatif olamaz.")
+
+        # Paper trading → gerçek borsa bakiyesi kontrol edilmez
+        if self._paper_trading_enabled and self.paper_engine is not None:
+            self.logger.debug(
+                "Paper trading aktif, bakiye kontrolü paper modda atlandı. required_margin=%.4f",
+                required_margin,
+            )
+            return
 
         balance_info = self.exchange.get_balance()
 
@@ -329,7 +334,6 @@ class OrderExecutor:
 
         free_balance = balance_info.get("free")
         asset = balance_info.get("currency", "USDT")
-
 
         if free_balance is None:
             raise OrderExecutionError("Bakiye bilgisi hatalı veya eksik (free alanı yok)")
@@ -344,8 +348,9 @@ class OrderExecutor:
             "Balance OK → required_margin=%.4f, free=%.4f %s",
             required_margin,
             free_balance,
-            asset
+            asset,
         )
+
 
 
     def record_order(
@@ -413,15 +418,37 @@ class OrderExecutor:
     ) -> OrderResult:
         """
         PaperTradingEngine üzerinden emir çalıştırma.
-
-        NOT:
-        - PaperTradingEngine arayüzü henüz yazılmadığı için burada da iskelet var.
+        Gerçek borsaya emir göndermez, sadece simüle eder.
         """
         if self.paper_engine is None:
             raise OrderExecutionError("Paper trading aktif ama paper_engine set edilmemiş.")
 
-        # TODO: core/paper_trading_engine.py tasarımı tamamlanınca doldurulacak.
-        raise NotImplementedError("_execute_paper_order, PaperTradingEngine hazır olduğunda implement edilecek.")
+        try:
+            # Simülasyon için kullanılacak fiyat:
+            # - Market emir → anlık ticker fiyatı
+            # - Limit emir → params.price
+            price = self._get_effective_price(params)
+
+            raw_order = self.paper_engine.execute_order(params, qty, price)
+
+            order_id = raw_order.get("id")
+            status = raw_order.get("status")
+            filled = raw_order.get("filled") or raw_order.get("amount")
+            avg_price = raw_order.get("average") or raw_order.get("price")
+
+            return OrderResult(
+                success=True,
+                order_id=str(order_id) if order_id is not None else None,
+                status=status,
+                filled_qty=float(filled) if filled is not None else None,
+                avg_price=float(avg_price) if avg_price is not None else None,
+                raw=raw_order,
+            )
+
+        except Exception as e:
+            self.logger.error("Paper order execution failed: %s", e, exc_info=True)
+            raise OrderExecutionError(str(e))
+
 
     def _execute_real_order(
         self,
