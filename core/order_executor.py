@@ -24,6 +24,7 @@ from utils.config_manager import ConfigManager
 from database.db_manager import DatabaseManager
 from core.exchange_manager import get_exchange_manager, ExchangeManager
 from core.paper_trading_engine import PaperTradingEngine
+from core.risk_manager import RiskManager, RiskLimitError, OrderRiskContext
 
 
 OrderSide = Literal["buy", "sell"]
@@ -101,20 +102,18 @@ class OrderExecutor:
         exchange_manager: Optional[ExchangeManager] = None,
         paper_trading_engine: Any = None,
         logger=None,
+        risk_manager: Optional[RiskManager] = None,
     ) -> None:
         self.logger = logger or get_logger(__name__)
         self.db = db_manager
         self.config = config_manager
         self.exchange: ExchangeManager = exchange_manager or get_exchange_manager()
-        self.paper_engine = paper_trading_engine or PaperTradingEngine(logger=self.logger)
-
+        self.paper_engine = paper_trading_engine
+        self.risk_manager = risk_manager or RiskManager(db_manager=self.db, logger=self.logger)
 
         # UI veya Preferences tarafından set edilecek flag
         self._paper_trading_enabled: bool = False
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def set_paper_trading(self, enabled: bool) -> None:
         """
@@ -183,30 +182,49 @@ class OrderExecutor:
         Ortak emir akışı:
         1. Validasyon
         2. Pozisyon boyutu & marj hesaplama
-        3. Bakiye kontrolü
-        4. Paper / Real karar
-        5. Emir gönderimi
-        6. DB kayıt
+        3. Risk kontrolleri
+        4. Bakiye kontrolü
+        5. Paper / Real karar
+        6. Emir gönderimi
+        7. DB kayıt
         """
         self.logger.debug("Order received: %s", params)
 
         try:
+            # 1) Validasyon
             valid_params = self.validate_order(params)
+
+            # 2) Fiyat ve pozisyon boyutu
+            effective_price = self._get_effective_price(valid_params)
             qty, required_margin = self.calculate_position_size(
                 amount=valid_params.amount,
-                price=self._get_effective_price(valid_params),
+                price=effective_price,
                 leverage=valid_params.leverage,
                 amount_type=valid_params.amount_type,
             )
 
+            # 3) Risk kontrolleri (sadece limit tanımlıysa devreye girer)
+            if self.risk_manager is not None and effective_price is not None and effective_price > 0:
+                notional = qty * effective_price
+                risk_ctx = OrderRiskContext(
+                    symbol=valid_params.symbol,
+                    side=valid_params.side,
+                    notional_usd=notional,
+                    leverage=valid_params.leverage,
+                    is_paper=self._paper_trading_enabled,
+                )
+                self.risk_manager.check_order_risk(risk_ctx)
+
+            # 4) Bakiye kontrolü
             self.check_balance(required_margin)
 
+            # 5) Emir gönderimi (paper / real)
             if self._paper_trading_enabled and self.paper_engine is not None:
                 result = self._execute_paper_order(valid_params, qty, required_margin)
             else:
                 result = self._execute_real_order(valid_params, qty, required_margin)
 
-            # DB kayıt (başarılı / başarısız her durumda loglanabilir)
+            # 6) DB kayıt (başarılı / başarısız her durumda loglanabilir)
             try:
                 self.record_order(valid_params, result, required_margin, qty)
             except NotImplementedError:
@@ -218,6 +236,9 @@ class OrderExecutor:
         except OrderValidationError as e:
             self.logger.error("Order validation error: %s", e)
             return OrderResult(success=False, error_message=str(e))
+        except RiskLimitError as e:
+            self.logger.error("Risk limit error: %s", e)
+            return OrderResult(success=False, error_message=str(e))
         except InsufficientBalanceError as e:
             self.logger.error("Insufficient balance: %s", e)
             return OrderResult(success=False, error_message=str(e))
@@ -227,6 +248,7 @@ class OrderExecutor:
         except Exception as e:  # Son çare
             self.logger.exception("Unexpected error while executing order")
             return OrderResult(success=False, error_message=f"Unexpected error: {e}")
+
 
     def validate_order(self, params: OrderParams) -> OrderParams:
         """
