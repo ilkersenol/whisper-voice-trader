@@ -309,26 +309,43 @@ class OrderExecutor:
 
     def check_balance(self, required_margin: float) -> None:
         """
-        Gerekli marj için bakiye kontrolü.
-
-        NOT:
-        - ExchangeManager.get_balance() dönüş yapısı görülmeden
-          burada sadece iskelet bırakıyoruz.
-        - Detaylı implementasyon ExchangeManager incelendikten sonra yapılacak.
+        Gerekli margin için bakiye kontrolü.
+        ExchangeManager.get_balance() dönüşü:
+        {
+            "total": float,
+            "free": float,
+            "used": float,
+            "asset": "USDT"
+        }
+        formatında olmalıdır.
         """
         if required_margin <= 0:
             raise OrderValidationError("Gerekli marj sıfır veya negatif olamaz.")
 
-        # TODO: ExchangeManager.get_balance() dönüş formatına göre netleştirilecek.
-        # Şimdilik sadece iskelet + NotImplementedError yerine basit bir guard:
         balance_info = self.exchange.get_balance()
-        # balance_info yapısını bilmediğimiz için,
-        # burada sadece loglayıp gerçek kontrolü sonraya bırakıyoruz.
-        self.logger.debug("Balance info (raw): %s", balance_info)
 
-        # Bu satır, gerçek kontrol eklendiğinde kaldırılacak.
-        # Şimdilik sadece fonksiyonun var olması için.
-        # raise NotImplementedError("check_balance için balance yapısı net değil, sonra doldurulacak.")
+        if not isinstance(balance_info, dict):
+            raise OrderExecutionError("Bakiye bilgisi geçersiz formatta")
+
+        free_balance = balance_info.get("free")
+        asset = balance_info.get("asset", "USDT")
+
+        if free_balance is None:
+            raise OrderExecutionError("Bakiye bilgisi hatalı veya eksik (free alanı yok)")
+
+        if free_balance < required_margin:
+            raise InsufficientBalanceError(
+                f"Yetersiz bakiye. Gerekli: {required_margin:.2f} {asset}, "
+                f"Kullanılabilir: {free_balance:.2f} {asset}"
+            )
+
+        self.logger.debug(
+            "Balance OK → required_margin=%.4f, free=%.4f %s",
+            required_margin,
+            free_balance,
+            asset
+        )
+
 
     def record_order(
         self,
