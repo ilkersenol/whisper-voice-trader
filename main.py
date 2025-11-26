@@ -557,6 +557,20 @@ class MainWindow(QMainWindow):
             # Disconnect button (EKLE)
         if hasattr(self.ui, 'btnDisconnect'):
             self.ui.btnDisconnect.clicked.connect(self.on_disconnect_clicked)
+                # Buy / Sell butonları
+        if hasattr(self.ui, 'btnBuy'):
+            self.ui.btnBuy.clicked.connect(lambda: self.on_order_button_clicked("buy"))
+        if hasattr(self.ui, 'btnSell'):
+            self.ui.btnSell.clicked.connect(lambda: self.on_order_button_clicked("sell"))
+
+        # Paper trading checkbox
+        if hasattr(self.ui, 'chkPaperTrading'):
+            self.ui.chkPaperTrading.stateChanged.connect(self.on_paper_trading_changed)
+
+        # Leverage slider
+        if hasattr(self.ui, 'sliderLeverage'):
+            self.ui.sliderLeverage.valueChanged.connect(self.on_leverage_changed)
+
 
 
     def on_connect_clicked(self):
@@ -592,6 +606,15 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Connect button error: {e}")
             QMessageBox.critical(self, "Error", f"Failed to connect:\n{str(e)}")
+
+    def on_leverage_changed(self, value: int):
+        """Kaldıraç slider değişince label günceller."""
+        try:
+            if hasattr(self.ui, 'lblLeverageValue'):
+                self.ui.lblLeverageValue.setText(f"x{value}")
+        except Exception as e:
+            logger.error(f"Failed to update leverage label: {e}")
+
 
     def connect_to_exchange(self, exchange_name, keys):
         """Connect to exchange with existing keys - Using ExchangeManager"""
@@ -696,6 +719,95 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Disconnect error: {e}")
             QMessageBox.critical(self, "Error", f"Failed to disconnect:\n{str(e)}")
+
+
+    def on_paper_trading_changed(self, state: int):
+        """Paper trading checkbox değişince ikonları günceller (şimdilik sadece UI)."""
+        try:
+            enabled = (state == Qt.Checked)
+
+            # İkonlar varsa görünürlüklerini ayarla
+            if hasattr(self.ui, 'lblPaperIcon'):
+                self.ui.lblPaperIcon.setVisible(enabled)
+            if hasattr(self.ui, 'lblRealIcon'):
+                self.ui.lblRealIcon.setVisible(not enabled)
+
+            mode = "PAPER" if enabled else "REAL"
+            logger.info(f"Trading mode changed (UI): {mode}")
+
+            # İLERİDE: burada OrderExecutor.set_paper_trading(...) çağrılacak
+        except Exception as e:
+            logger.error(f"Failed to handle paper trading toggle: {e}")
+
+
+    def on_order_button_clicked(self, side: str):
+        """
+        BUY / SELL tıklandığında UI'dan emir parametrelerini toplar.
+        ŞİMDİLİK sadece log + bilgi popup gösterir.
+        Backend (OrderExecutor) ile bağlantıyı daha sonra ekleyeceğiz.
+        """
+        try:
+            symbol = None
+            if hasattr(self.ui, 'comboSymbol'):
+                symbol = self.ui.comboSymbol.currentText()
+
+            active_tab = 1
+            if hasattr(self.ui, 'tabOrderTypes'):
+                active_tab = self.ui.tabOrderTypes.currentIndex()  # 0: Limit, 1: Market, 2: Stop
+
+            leverage = None
+            if hasattr(self.ui, 'sliderLeverage'):
+                leverage = self.ui.sliderLeverage.value()
+
+            order_type = "market"
+            price = None
+            amount = None
+
+            # Limit tabı
+            if active_tab == 0:
+                order_type = "limit"
+                if hasattr(self.ui, 'spinLimitPrice'):
+                    price = float(self.ui.spinLimitPrice.value())
+                if hasattr(self.ui, 'spinLimitAmount'):
+                    amount = float(self.ui.spinLimitAmount.value())
+
+            # Market tabı
+            elif active_tab == 1:
+                order_type = "market"
+                if hasattr(self.ui, 'spinMarketAmount'):
+                    amount = float(self.ui.spinMarketAmount.value())
+
+            # Stop tabı
+            elif active_tab == 2:
+                order_type = "stop"
+                if hasattr(self.ui, 'spinStopPrice'):
+                    price = float(self.ui.spinStopPrice.value())
+                if hasattr(self.ui, 'spinStopAmount'):
+                    amount = float(self.ui.spinStopAmount.value())
+
+            logger.info(
+                "UI order click: side=%s type=%s symbol=%s amount=%s price=%s lev=%s",
+                side, order_type, symbol, amount, price, leverage,
+            )
+
+            QMessageBox.information(
+                self,
+                "Emir (UI tarafı hazır)",
+                f"UI'dan emir isteği alındı.\n\n"
+                f"Yön: {side}\n"
+                f"Tip: {order_type}\n"
+                f"Sembol: {symbol}\n"
+                f"Miktar: {amount}\n"
+                f"Fiyat: {price}\n"
+                f"Kaldıraç: {leverage}\n\n"
+                f"(Bu aşamada backend'e henüz bağlamadık.)"
+            )
+
+        except Exception as e:
+            logger.error("on_order_button_clicked failed: %s", e, exc_info=True)
+            QMessageBox.critical(self, "Hata", f"Emir UI işleyicisinde hata:\n{e}")
+
+
 
     def disconnect_exchange(self):
         """Disconnect from current exchange - Using ExchangeManager"""
