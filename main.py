@@ -6,7 +6,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog
 from PyQt5.QtCore import Qt
 import assets.resources_rc
-from core.order_executor import OrderExecutor, OrderParams, OrderResult
+
 
 # High DPI Support - MUST BE BEFORE QApplication
 QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -17,8 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from ui.generated.ui_main_window import Ui_MainWindow
 from database.db_manager import get_db
-from database.db_manager import DatabaseManager
-from utils.config_manager import ConfigManager
 from utils.logger import get_logger
 from core.exchange_manager import get_exchange_manager
 
@@ -30,20 +28,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.db = get_db()
-        self.db = DatabaseManager("database/sqlite.db")
-        self.logger = get_logger("UI")
-        self.config = ConfigManager()
         self.exchange_manager = get_exchange_manager()  # Exchange Manager instance
-        self.order_executor = OrderExecutor(
-            db_manager=self.db,
-            config_manager=self.config,
-            exchange_manager=None,  # UI'da seçilen exchange ile daha sonra bağlayacağız
-            paper_trading_engine=None,
-            logger=self.logger,
-        )
-        self.ui.btnBuy.clicked.connect(self.on_buy_clicked)
-        self.ui.btnSell.clicked.connect(self.on_sell_clicked)
-        self.ui.chkPaperTrading.stateChanged.connect(self.on_paper_trading_changed)
         self.price_updater_thread = None  
         self.current_exchange = None  
         self.symbol_change_timer = None 
@@ -57,14 +42,6 @@ class MainWindow(QMainWindow):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
 
         #self.load_connection_status()
-
-    def on_paper_trading_changed(self, state):
-        enabled = bool(state == 2)
-        self.order_executor.set_paper_trading(enabled)
-        mode = "PAPER" if enabled else "REAL"
-        self.logger.info(f"Trading mode changed: {mode}")
-
-
     def on_exchange_connection_updated(self, exchange_name, is_connected, data):
         """Update main window when exchange connection changes"""
         try:
@@ -186,65 +163,6 @@ class MainWindow(QMainWindow):
         
         except Exception as e:
             logger.error(f"Failed to load connection status: {e}")
-
-
-    def on_buy_clicked(self):
-        self.execute_order_ui("buy")
-
-    def on_sell_clicked(self):
-        self.execute_order_ui("sell")
-
-
-    def execute_order_ui(self, side: str):
-        try:
-            symbol = self.ui.comboSymbol.currentText()
-            leverage = int(self.ui.sliderLeverage.value())
-
-            tab = self.ui.tabOrderTypes.currentIndex()  # 0: Limit, 1: Market
-
-            if tab == 0:
-                # LIMIT ORDER
-                order_type = "LIMIT"
-                price = float(self.ui.spinLimitPrice.value())
-                amount = float(self.ui.spinLimitAmount.value())
-            else:
-                # MARKET ORDER
-                order_type = "MARKET"
-                price = None
-                amount = float(self.ui.spinMarketAmount.value())
-
-            params = OrderParams(
-                symbol=symbol,
-                side=side,
-                order_type=order_type,
-                amount=amount,
-                price=price,
-                leverage=leverage,
-                amount_type="usd",   # UI’de hep USDT cinsinden
-                extra={"voice_command": None},
-            )
-
-            result: OrderResult = self.order_executor.execute_order(params)
-
-            if result.success:
-                self.show_info(f"Emir başarıyla gönderildi!\nOrder ID: {result.order_id}")
-            else:
-                self.show_error(f"Emir başarısız: {result.error_message}")
-
-        except Exception as e:
-            self.show_error(f"Hata oluştu: {e}")
-            self.logger.error(f"execute_order_ui exception: {e}", exc_info=True)
-
-    def show_info(self, message):
-        from PyQt5.QtWidgets import QMessageBox
-        QMessageBox.information(self, "Bilgi", message)
-
-    def show_error(self, message):
-        from PyQt5.QtWidgets import QMessageBox
-        QMessageBox.critical(self, "Hata", message)
-
-
-
     def setup_table_headers(self):
         """Configure table headers to stretch across full width"""
         from PyQt5.QtWidgets import QHeaderView
