@@ -6,19 +6,18 @@ from pathlib import Path
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog
 from PyQt5.QtCore import Qt
 import assets.resources_rc
-
-
-# High DPI Support - MUST BE BEFORE QApplication
 QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
-# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
-
 from ui.generated.ui_main_window import Ui_MainWindow
 from database.db_manager import get_db
 from utils.logger import get_logger
 from core.exchange_manager import get_exchange_manager
+from core.order_executor import OrderExecutor, OrderParams, OrderResult
+from database.db_manager import DatabaseManager
+from utils.config_manager import ConfigManager
+from core.exchange_manager import get_exchange_manager
+
 
 logger = get_logger(__name__)
 
@@ -38,6 +37,19 @@ class MainWindow(QMainWindow):
         self.setup_table_headers()
         self.connect_menu_actions()
         self.connect_button_actions()
+        # -------------------------------
+        # ORDER EXECUTOR (Backend emir motoru)
+        # -------------------------------
+        self.db = DatabaseManager("database/sqlite.db")
+        self.config = ConfigManager()
+        self.exchange_manager = get_exchange_manager()
+        self.order_executor = OrderExecutor(
+            db_manager=self.db,
+            config_manager=self.config,
+            exchange_manager=self.exchange_manager,
+            paper_trading_engine=None,  # Paper engine sonra bağlanacak
+        )
+
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
 
@@ -725,7 +737,7 @@ class MainWindow(QMainWindow):
         """Paper trading checkbox değişince ikonları günceller (şimdilik sadece UI)."""
         try:
             enabled = (state == Qt.Checked)
-
+            self.order_executor.set_paper_trading(enabled)
             # İkonlar varsa görünürlüklerini ayarla
             if hasattr(self.ui, 'lblPaperIcon'):
                 self.ui.lblPaperIcon.setVisible(enabled)
@@ -741,6 +753,8 @@ class MainWindow(QMainWindow):
 
 
     def on_order_button_clicked(self, side: str):
+
+        
         """
         BUY / SELL tıklandığında UI'dan emir parametrelerini toplar.
         ŞİMDİLİK sadece log + bilgi popup gösterir.
@@ -779,7 +793,10 @@ class MainWindow(QMainWindow):
 
             # Stop tabı
             elif active_tab == 2:
-                order_type = "stop"
+                QMessageBox.warning(self, "Henüz desteklenmiyor",
+                                    "Stop emir akışı backend tarafında henüz hazır değil.")
+                return
+
                 if hasattr(self.ui, 'spinStopPrice'):
                     price = float(self.ui.spinStopPrice.value())
                 if hasattr(self.ui, 'spinStopAmount'):
@@ -845,7 +862,7 @@ class MainWindow(QMainWindow):
             
             # 4. Reset UI - Connection Status
             if hasattr(self.ui, 'lblConnectionStatus'):
-                self.ui.lblConnectionStatus.setText("⚠️ Disconnected")
+                self.ui.lblConnectionStatus.setText("⚠️ Bağlantı Kesildi")
                 self.ui.lblConnectionStatus.setStyleSheet("color: #FF9800; font-weight: bold;")
             
             # 5. Reset UI - Balance
@@ -861,23 +878,23 @@ class MainWindow(QMainWindow):
             
             # 7. Reset price labels
             if hasattr(self.ui, 'lblBestAsk'):
-                self.ui.lblBestAsk.setText("N/A")
+                self.ui.lblBestAsk.setText("Veri Yok")
                 self.ui.lblBestAsk.setStyleSheet("")
             
             if hasattr(self.ui, 'lblBestBid'):
-                self.ui.lblBestBid.setText("N/A")
+                self.ui.lblBestBid.setText("Veri Yok")
                 self.ui.lblBestBid.setStyleSheet("")
             
             if hasattr(self.ui, 'lblCurrentPrice'):
-                self.ui.lblCurrentPrice.setText("N/A")
+                self.ui.lblCurrentPrice.setText("Veri Yok")
                 self.ui.lblCurrentPrice.setStyleSheet("color: #9E9E9E; font-size: 20px;")
             
-            logger.info(f"Disconnected from {exchange_name}")
+            logger.info(f"{exchange_name} bağlantısı kesildi")
             
             QMessageBox.information(
                 self,
-                "Disconnected",
-                f"Successfully disconnected from {exchange_name.title()}"
+                "Bağlantı kesildi",
+                f" {exchange_name.title()} bağlantısı sonlandırıldı"
             )
             
         except Exception as e:
