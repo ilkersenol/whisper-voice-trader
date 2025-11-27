@@ -19,6 +19,12 @@ from ui.generated.ui_main_window import Ui_MainWindow
 from database.db_manager import get_db
 from utils.logger import get_logger
 from core.exchange_manager import get_exchange_manager
+from database.db_manager import get_db
+from core.exchange_manager import get_exchange_manager
+from core.order_executor import OrderExecutor, OrderParams, OrderResult
+from utils.config_manager import ConfigManager
+
+
 
 logger = get_logger(__name__)
 
@@ -29,6 +35,14 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.db = get_db()
         self.exchange_manager = get_exchange_manager()  # Exchange Manager instance
+        self.config = ConfigManager()
+        self.order_executor = OrderExecutor(
+        db_manager=self.db,
+        config_manager=self.config,
+        exchange_manager=self.exchange_manager,
+        paper_trading_engine=None,
+    )
+
         self.price_updater_thread = None  
         self.current_exchange = None  
         self.symbol_change_timer = None 
@@ -659,6 +673,8 @@ class MainWindow(QMainWindow):
 
     def on_paper_trading_changed(self, state: int):
         """Paper trading checkbox değişince ikonları günceller (şimdilik sadece UI)."""
+        if hasattr(self, "order_executor"):
+            self.order_executor.set_paper_trading(enabled)
         try:
             enabled = (state == Qt.Checked)
 
@@ -677,71 +693,125 @@ class MainWindow(QMainWindow):
 
 
     def on_order_button_clicked(self, side: str):
-        """
-        BUY / SELL tıklandığında UI'dan emir parametrelerini toplar.
-        ŞİMDİLİK sadece log + bilgi popup gösterir.
-        Backend (OrderExecutor) ile bağlantıyı daha sonra ekleyeceğiz.
-        """
-        try:
-            symbol = None
-            if hasattr(self.ui, 'comboSymbol'):
-                symbol = self.ui.comboSymbol.currentText()
+            """
+            BUY / SELL tıklandığında:
+            - UI'dan parametreleri toplar
+            - OrderParams oluşturur
+            - OrderExecutor'a gönderir
+            - Sonucu popup olarak gösterir
+            """
+            try:
+                # Sembol
+                symbol = None
+                if hasattr(self.ui, "comboSymbol"):
+                    symbol = self.ui.comboSymbol.currentText()
 
-            active_tab = 1
-            if hasattr(self.ui, 'tabOrderTypes'):
-                active_tab = self.ui.tabOrderTypes.currentIndex()  # 0: Limit, 1: Market, 2: Stop
+                # Aktif sekme: 0=Limit, 1=Market, 2=Stop
+                active_tab = 1
+                if hasattr(self.ui, "tabOrderTypes"):
+                    active_tab = self.ui.tabOrderTypes.currentIndex()
 
-            leverage = None
-            if hasattr(self.ui, 'sliderLeverage'):
-                leverage = self.ui.sliderLeverage.value()
+                # Kaldıraç
+                leverage = None
+                if hasattr(self.ui, "sliderLeverage"):
+                    leverage = int(self.ui.sliderLeverage.value())
 
-            order_type = "market"
-            price = None
-            amount = None
-
-            # Limit tabı
-            if active_tab == 0:
-                order_type = "limit"
-                if hasattr(self.ui, 'spinLimitPrice'):
-                    price = float(self.ui.spinLimitPrice.value())
-                if hasattr(self.ui, 'spinLimitAmount'):
-                    amount = float(self.ui.spinLimitAmount.value())
-
-            # Market tabı
-            elif active_tab == 1:
                 order_type = "market"
-                if hasattr(self.ui, 'spinMarketAmount'):
-                    amount = float(self.ui.spinMarketAmount.value())
+                price = None
+                amount = None
 
-            # Stop tabı
-            elif active_tab == 2:
-                order_type = "stop"
-                if hasattr(self.ui, 'spinStopPrice'):
-                    price = float(self.ui.spinStopPrice.value())
-                if hasattr(self.ui, 'spinStopAmount'):
-                    amount = float(self.ui.spinStopAmount.value())
+                # Limit tabı
+                if active_tab == 0:
+                    order_type = "limit"
+                    if hasattr(self.ui, "spinLimitPrice"):
+                        price = float(self.ui.spinLimitPrice.value())
+                    if hasattr(self.ui, "spinLimitAmount"):
+                        amount = float(self.ui.spinLimitAmount.value())
 
-            logger.info(
-                "UI order click: side=%s type=%s symbol=%s amount=%s price=%s lev=%s",
-                side, order_type, symbol, amount, price, leverage,
-            )
+                # Market tabı
+                elif active_tab == 1:
+                    order_type = "market"
+                    if hasattr(self.ui, "spinMarketAmount"):
+                        amount = float(self.ui.spinMarketAmount.value())
 
-            QMessageBox.information(
-                self,
-                "Emir (UI tarafı hazır)",
-                f"UI'dan emir isteği alındı.\n\n"
-                f"Yön: {side}\n"
-                f"Tip: {order_type}\n"
-                f"Sembol: {symbol}\n"
-                f"Miktar: {amount}\n"
-                f"Fiyat: {price}\n"
-                f"Kaldıraç: {leverage}\n\n"
-                f"(Bu aşamada backend'e henüz bağlamadık.)"
-            )
+                # Stop tabı (şimdilik desteklemiyoruz)
+                elif active_tab == 2:
+                    QMessageBox.warning(
+                        self,
+                        "Henüz desteklenmiyor",
+                        "Stop emir akışı backend tarafında henüz hazır değil.",
+                    )
+                    return
 
-        except Exception as e:
-            logger.error("on_order_button_clicked failed: %s", e, exc_info=True)
-            QMessageBox.critical(self, "Hata", f"Emir UI işleyicisinde hata:\n{e}")
+                # Basit UI kontrolleri
+                if not symbol:
+                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen bir sembol seçin.")
+                    return
+
+                if amount is None or amount <= 0:
+                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen sıfırdan büyük miktar girin.")
+                    return
+
+                if leverage is None or leverage <= 0:
+                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen geçerli bir kaldıraç seçin.")
+                    return
+
+                logger.info(
+                    "UI order click: side=%s type=%s symbol=%s amount=%s price=%s lev=%s",
+                    side,
+                    order_type,
+                    symbol,
+                    amount,
+                    price,
+                    leverage,
+                )
+
+                # -------------------------
+                # BACKEND EMİR GÖNDERİMİ
+                # -------------------------
+                params = OrderParams(
+                    symbol=symbol,
+                    side=side,
+                    amount=amount,
+                    amount_type="usd",  # UI USDT cinsinden miktar kullanıyor
+                    leverage=leverage,
+                    order_type=order_type,
+                    price=price,
+                    extra={"source": "ui"},
+                )
+
+                if order_type == "market":
+                    result = self.order_executor.execute_market_order(params)
+                elif order_type == "limit":
+                    result = self.order_executor.execute_limit_order(params)
+                else:
+                    QMessageBox.critical(
+                        self, "Hata", f"Order type desteklenmiyor: {order_type}"
+                    )
+                    return
+
+                # Sonuç popup
+                if result.success:
+                    QMessageBox.information(
+                        self,
+                        "Emir Başarılı",
+                        f"Emir başarıyla gönderildi!\n\n"
+                        f"Order ID: {result.order_id}\n"
+                        f"Durum: {result.status}\n"
+                        f"Gerçekleşen miktar: {result.filled_qty}\n"
+                        f"Ortalama fiyat: {result.avg_price}",
+                    )
+                else:
+                    QMessageBox.critical(
+                        self,
+                        "Emir Hatası",
+                        f"Emir başarısız.\n\nHata: {result.error_message}",
+                    )
+
+            except Exception as e:
+                logger.error("on_order_button_clicked failed: %s", e, exc_info=True)
+                QMessageBox.critical(self, "Hata", f"Emir UI işleyicisinde hata:\n{e}")
+
 
 
 

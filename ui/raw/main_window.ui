@@ -282,125 +282,6 @@
         </spacer>
        </item>
        <item>
-        <widget class="QFrame" name="framePortfolio">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_portfolio">
-          <property name="spacing">
-           <number>20</number>
-          </property>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_balance">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="lblBalanceLabel">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Toplam Bakiye&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblBalance">
-              <property name="minimumSize">
-               <size>
-                <width>150</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;000,000.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="Line" name="line_1">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_pnl">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="lblPnLLabel">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Kâr/Zarar&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblPnL">
-              <property name="minimumSize">
-               <size>
-                <width>130</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600; color:#0ecb81;&quot;&gt;+0.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-              <property name="pnl" stdset="0">
-               <string>positive</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_margin">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="lblMarginLabel">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Marj Oranı&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblMarginRatio">
-              <property name="minimumSize">
-               <size>
-                <width>80</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;0.00%&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="Line" name="line_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -1555,6 +1436,125 @@ QPushButton:hover {
               <widget class="QLabel" name="lbl24hLow">
                <property name="text">
                 <string>65,100.00</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="framePortfolio">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_portfolio">
+           <property name="spacing">
+            <number>20</number>
+           </property>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_balance">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="lblBalanceLabel">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Toplam Bakiye&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="lblBalance">
+               <property name="minimumSize">
+                <size>
+                 <width>150</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;000,000.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="Line" name="line_1">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_pnl">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="lblPnLLabel">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Kâr/Zarar&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="lblPnL">
+               <property name="minimumSize">
+                <size>
+                 <width>130</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600; color:#0ecb81;&quot;&gt;+0.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+               <property name="pnl" stdset="0">
+                <string>positive</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_margin">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="lblMarginLabel">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Marj Oranı&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="lblMarginRatio">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;0.00%&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
                </property>
               </widget>
              </item>

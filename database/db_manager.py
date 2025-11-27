@@ -149,33 +149,37 @@ class DatabaseManager:
     
         # --- System Logs Helpers (system_logs tablosu) ---
 
-    def insert_system_log(
-        self,
-        level: str,
-        message: str,
-        context: dict | None = None,
-    ) -> int:
+    def insert_system_log(self, level: str, message: str, context: Optional[Dict[str, Any]] = None) -> None:
         """
-        system_logs tablosuna log kaydı ekler.
-        context dict ise JSON string olarak saklanır.
+        Sistem log kaydı.
+        - system_logs tablosu yoksa sessizce geçer.
+        - Başka bir hata olursa da uygulamayı BOZMAZ, sessiz geçer.
         """
         import json
+        import sqlite3
 
-        fields = ["level", "message", "context_json"]
-        placeholders = ", ".join(["?"] * len(fields))
-        values = [
-            level,
-            message,
-            json.dumps(context or {}),
-        ]
+        context_json = json.dumps(context or {})
 
-        query = f"""
-            INSERT INTO system_logs ({", ".join(fields)})
-            VALUES ({placeholders})
-        """
+        try:
+            with self._get_connection() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO system_logs (level, message, context, created_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (level, message, context_json),
+                )
+        except sqlite3.OperationalError as e:
+            # Tablo yoksa, log yazmayalım ama uygulamayı da bozmayalım
+            if "no such table: system_logs" in str(e):
+                return
+            # başka bir SQLite hatasıysa, yukarı fırlat
+            raise
+        except Exception:
+            # Her türlü başka hatada da sessizce geç
+            return
 
-        cursor = self.execute(query, tuple(values))
-        return cursor.lastrowid
+
 
 
     

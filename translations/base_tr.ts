@@ -546,52 +546,52 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="301"/>
+        <location filename="../ui/raw/main_window.ui" line="1464"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Toplam Bakiye&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="314"/>
+        <location filename="../ui/raw/main_window.ui" line="1477"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;000,000.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="338"/>
+        <location filename="../ui/raw/main_window.ui" line="1501"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Kâr/Zarar&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="351"/>
+        <location filename="../ui/raw/main_window.ui" line="1514"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600; color:#0ecb81;&quot;&gt;+0.00 USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="357"/>
+        <location filename="../ui/raw/main_window.ui" line="1520"/>
         <source>positive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="378"/>
+        <location filename="../ui/raw/main_window.ui" line="1541"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; color:#848e9c;&quot;&gt;Marj Oranı&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="391"/>
+        <location filename="../ui/raw/main_window.ui" line="1554"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:13pt; font-weight:600;&quot;&gt;0.00%&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="419"/>
+        <location filename="../ui/raw/main_window.ui" line="300"/>
         <source>🔴 Bağlantı Yok</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="422"/>
+        <location filename="../ui/raw/main_window.ui" line="303"/>
         <source>disconnected</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="449"/>
+        <location filename="../ui/raw/main_window.ui" line="330"/>
         <source>Tüm pozisyonları kapat ve botu durdur (Ctrl+Shift+P)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -601,367 +601,367 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="474"/>
+        <location filename="../ui/raw/main_window.ui" line="355"/>
         <source>Dil Seçimi / Sprache / Language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="478"/>
+        <location filename="../ui/raw/main_window.ui" line="359"/>
         <source>🇹🇷 Türkçe</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="483"/>
+        <location filename="../ui/raw/main_window.ui" line="364"/>
         <source>🇩🇪 Deutsch</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="488"/>
+        <location filename="../ui/raw/main_window.ui" line="369"/>
         <source>🇬🇧 English</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="502"/>
+        <location filename="../ui/raw/main_window.ui" line="383"/>
         <source>Aktif Exchange Platformu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="512"/>
+        <location filename="../ui/raw/main_window.ui" line="393"/>
         <source>Binance</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="517"/>
+        <location filename="../ui/raw/main_window.ui" line="398"/>
         <source>MEXC</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="522"/>
+        <location filename="../ui/raw/main_window.ui" line="403"/>
         <source>ByBit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="527"/>
+        <location filename="../ui/raw/main_window.ui" line="408"/>
         <source>OKX</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="532"/>
+        <location filename="../ui/raw/main_window.ui" line="413"/>
         <source>KuCoin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="565"/>
+        <location filename="../ui/raw/main_window.ui" line="446"/>
         <source>Server'a Bağlan</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="568"/>
+        <location filename="../ui/raw/main_window.ui" line="449"/>
         <source>⚙️ BAĞLAN</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="612"/>
+        <location filename="../ui/raw/main_window.ui" line="493"/>
         <source>Sembol Seçimi</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="633"/>
+        <location filename="../ui/raw/main_window.ui" line="514"/>
         <source>Yükleniyor...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="653"/>
+        <location filename="../ui/raw/main_window.ui" line="534"/>
         <source>Sembol listesini yenile</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="656"/>
+        <location filename="../ui/raw/main_window.ui" line="537"/>
         <source>🔄</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="684"/>
+        <location filename="../ui/raw/main_window.ui" line="565"/>
         <source>Best Ask</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="711"/>
+        <location filename="../ui/raw/main_window.ui" line="592"/>
         <source>Best Bid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="729"/>
+        <location filename="../ui/raw/main_window.ui" line="610"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#0ecb81;&quot;&gt;000,000.00&lt;/span&gt;&lt;span style=&quot; font-size:12pt; color:#848e9c;&quot;&gt; USDT&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="742"/>
+        <location filename="../ui/raw/main_window.ui" line="623"/>
         <source>Kaldıraç</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="750"/>
+        <location filename="../ui/raw/main_window.ui" line="631"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; font-weight:600; color:#fcd535;&quot;&gt;10x&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="783"/>
+        <location filename="../ui/raw/main_window.ui" line="664"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#848e9c;&quot;&gt;1x&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="803"/>
+        <location filename="../ui/raw/main_window.ui" line="684"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#848e9c;&quot;&gt;125x&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="819"/>
+        <location filename="../ui/raw/main_window.ui" line="700"/>
         <source>Limit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="827"/>
+        <location filename="../ui/raw/main_window.ui" line="708"/>
         <source>Fiyat:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="951"/>
+        <location filename="../ui/raw/main_window.ui" line="832"/>
         <source>Miktar (USDT):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="876"/>
+        <location filename="../ui/raw/main_window.ui" line="757"/>
         <source>Market</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="909"/>
+        <location filename="../ui/raw/main_window.ui" line="790"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#fcd535;&quot;&gt;⚠️ Market emri anında mevcut fiyattan gerçekleşir&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="920"/>
+        <location filename="../ui/raw/main_window.ui" line="801"/>
         <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="928"/>
+        <location filename="../ui/raw/main_window.ui" line="809"/>
         <source>Stop Fiyatı:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="980"/>
+        <location filename="../ui/raw/main_window.ui" line="861"/>
         <source>Take Profit / Stop Loss</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="994"/>
+        <location filename="../ui/raw/main_window.ui" line="875"/>
         <source>Take Profit (%):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1033"/>
+        <location filename="../ui/raw/main_window.ui" line="914"/>
         <source>%</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1020"/>
+        <location filename="../ui/raw/main_window.ui" line="901"/>
         <source>Stop Loss (%):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1048"/>
+        <location filename="../ui/raw/main_window.ui" line="929"/>
         <source>🎯 Trailing Stop Aktif</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1076"/>
+        <location filename="../ui/raw/main_window.ui" line="957"/>
         <source>📈 AL / LONG</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1096"/>
+        <location filename="../ui/raw/main_window.ui" line="977"/>
         <source>📉 SAT / SHORT</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1116"/>
+        <location filename="../ui/raw/main_window.ui" line="997"/>
         <source>🚪 Pozisyonu Kapat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1129"/>
+        <location filename="../ui/raw/main_window.ui" line="1010"/>
         <source>🔄 Pozisyonu Ters Çevir</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1154"/>
+        <location filename="../ui/raw/main_window.ui" line="1035"/>
         <source>🎤 Sesli Emir</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1167"/>
+        <location filename="../ui/raw/main_window.ui" line="1048"/>
         <source>⚙️ Komut Ekle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1180"/>
+        <location filename="../ui/raw/main_window.ui" line="1061"/>
         <source>❌ BAĞLANTIYI SONLANDIR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1221"/>
+        <location filename="../ui/raw/main_window.ui" line="1102"/>
         <source>Fiyat Grafiği</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1239"/>
+        <location filename="../ui/raw/main_window.ui" line="1120"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#848e9c;&quot;&gt;📊 Grafik Yüklenecek (ChartWidget Promoted)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1259"/>
+        <location filename="../ui/raw/main_window.ui" line="1140"/>
         <source>Açık Pozisyonlar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1396"/>
+        <location filename="../ui/raw/main_window.ui" line="1277"/>
         <source>Sembol</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1401"/>
+        <location filename="../ui/raw/main_window.ui" line="1282"/>
         <source>Yön</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1411"/>
+        <location filename="../ui/raw/main_window.ui" line="1292"/>
         <source>Miktar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1287"/>
+        <location filename="../ui/raw/main_window.ui" line="1168"/>
         <source>Giriş Fiyatı</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1292"/>
+        <location filename="../ui/raw/main_window.ui" line="1173"/>
         <source>Mevcut Fiyat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1421"/>
+        <location filename="../ui/raw/main_window.ui" line="1302"/>
         <source>Kâr/Zarar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1302"/>
+        <location filename="../ui/raw/main_window.ui" line="1183"/>
         <source>Kâr/Zarar %</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1307"/>
+        <location filename="../ui/raw/main_window.ui" line="1188"/>
         <source>Likitasyon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1369"/>
+        <location filename="../ui/raw/main_window.ui" line="1250"/>
         <source>İşlemler</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1321"/>
+        <location filename="../ui/raw/main_window.ui" line="1202"/>
         <source>Açık Emirler</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1339"/>
+        <location filename="../ui/raw/main_window.ui" line="1220"/>
         <source>Tip</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1406"/>
+        <location filename="../ui/raw/main_window.ui" line="1287"/>
         <source>Fiyat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1359"/>
+        <location filename="../ui/raw/main_window.ui" line="1240"/>
         <source>Dolum</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1391"/>
+        <location filename="../ui/raw/main_window.ui" line="1272"/>
         <source>Zaman</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1378"/>
+        <location filename="../ui/raw/main_window.ui" line="1259"/>
         <source>İşlem Geçmişi</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1416"/>
+        <location filename="../ui/raw/main_window.ui" line="1297"/>
         <source>Komisyon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1426"/>
+        <location filename="../ui/raw/main_window.ui" line="1307"/>
         <source>Durum</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1469"/>
+        <location filename="../ui/raw/main_window.ui" line="1350"/>
         <source>Emir Defteri</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1484"/>
+        <location filename="../ui/raw/main_window.ui" line="1365"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; color:#848e9c;&quot;&gt;📖 Emir Defteri&lt;br/&gt;(OrderBookWidget Promoted)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1500"/>
+        <location filename="../ui/raw/main_window.ui" line="1381"/>
         <source>Hızlı Bilgi</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1508"/>
+        <location filename="../ui/raw/main_window.ui" line="1389"/>
         <source>24s Değişim:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1515"/>
+        <location filename="../ui/raw/main_window.ui" line="1396"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#0ecb81;&quot;&gt;+3.45%&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1522"/>
+        <location filename="../ui/raw/main_window.ui" line="1403"/>
         <source>24s Hacim:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1529"/>
+        <location filename="../ui/raw/main_window.ui" line="1410"/>
         <source>1.2B USDT</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1536"/>
+        <location filename="../ui/raw/main_window.ui" line="1417"/>
         <source>24s En Yüksek:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1543"/>
+        <location filename="../ui/raw/main_window.ui" line="1424"/>
         <source>68,200.00</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1550"/>
+        <location filename="../ui/raw/main_window.ui" line="1431"/>
         <source>24s En Düşük:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/raw/main_window.ui" line="1557"/>
+        <location filename="../ui/raw/main_window.ui" line="1438"/>
         <source>65,100.00</source>
         <translation type="unfinished"></translation>
     </message>
