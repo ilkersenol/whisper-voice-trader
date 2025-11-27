@@ -330,6 +330,20 @@ class MainWindow(QMainWindow):
 
     def on_price_updated(self, price_data):
         """Update UI with new prices"""
+
+        def format_price(value):
+            if value is None or value <= 0:
+                return "N/A"
+            # Küçük fiyatlar için daha fazla hane
+            if value < 0.01:
+                return f"${value:,.6f}"
+            elif value < 1:
+                return f"${value:,.5f}"
+            elif value < 100:
+                return f"${value:,.4f}"
+            else:
+                return f"${value:,.2f}"
+
         try:
             # lblBestAsk'a BID değerini yaz (SOL - Yeşil)
             if hasattr(self.ui, 'lblBestAsk'):
