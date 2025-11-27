@@ -40,16 +40,11 @@ class MainWindow(QMainWindow):
         self.connect_button_actions()
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
-
-        #self.load_connection_status()
     def on_exchange_connection_updated(self, exchange_name, is_connected, data):
         """Update main window when exchange connection changes"""
         try:
-            # Store current exchange (EKLE)
             if is_connected:
                 self.current_exchange = exchange_name
-            
-            # Update connection status
             if hasattr(self.ui, 'lblConnectionStatus'):
                 if is_connected:
                     self.ui.lblConnectionStatus.setText(f"✅ {exchange_name.title()} Connected")
@@ -57,43 +52,31 @@ class MainWindow(QMainWindow):
                 else:
                     self.ui.lblConnectionStatus.setText(f"❌ {exchange_name.title()} Disconnected")
                     self.ui.lblConnectionStatus.setStyleSheet("color: #f44336; font-weight: bold;")
-            
-            # Update balance
             balance_info = data.get('balance', {})
             if hasattr(self.ui, 'lblBalance') and balance_info:
                 usdt_balance = balance_info.get('USDT', 0.0)
                 self.ui.lblBalance.setText(f"${usdt_balance:,.2f}")
                 self.ui.lblBalance.setStyleSheet("color: #FFC107; font-size: 18px; font-weight: bold;")
-            
-            # Update symbols combobox
             symbols = data.get('symbols', [])
             if hasattr(self.ui, 'comboSymbol') and symbols:
                 self.ui.comboSymbol.clear()
                 self.ui.comboSymbol.addItems(symbols)
                 logger.info(f"Loaded {len(symbols)} symbols for {exchange_name}")
-                
-                # Start price updater for first symbol (EKLE)
                 if symbols:
                     self.start_price_updater(symbols[0])
-            
             logger.info(f"Main window updated: {exchange_name} connection={is_connected}")
-            
         except Exception as e:
             logger.error(f"Failed to update main window: {e}")
-
     def load_connection_status(self):
         """Load connection status on startup"""
         try:
             connected = self.db.get_connected_exchanges()
-            
             if connected:
                 exchange_name = connected[0]
                 self.current_exchange = exchange_name
-                
                 if hasattr(self.ui, 'lblConnectionStatus'):
                     self.ui.lblConnectionStatus.setText(f"✅ {exchange_name.title()} Connected")
                     self.ui.lblConnectionStatus.setStyleSheet("color: #4CAF50; font-weight: bold;")
-                
                 try:
                     keys = self.db.load_api_keys(exchange_name, decrypt=True)
                     if keys:
@@ -105,74 +88,48 @@ class MainWindow(QMainWindow):
                             'secret': keys['secret_key'],
                             'enableRateLimit': True,
                         }
-                        
                         if exchange_name == 'binance':
                             config['options'] = {'defaultType': 'future'}
-                        
                         exchange = exchange_class(config)
-                        
                         try:
                             exchange.set_sandbox_mode(True)
                         except:
                             pass
-                        
-                        # Get balance
                         balance = exchange.fetch_balance()
                         usdt_balance = balance.get('total', {}).get('USDT', 0.0)
-                        
                         if hasattr(self.ui, 'lblBalance'):
                             self.ui.lblBalance.setText(f"${usdt_balance:,.2f}")
                             self.ui.lblBalance.setStyleSheet("color: #FFC107; font-size: 18px; font-weight: bold;")
-                        
-                        # Get symbols
                         markets = exchange.load_markets()
                         futures_symbols = []
-                        
                         for symbol, market in markets.items():
                             if market.get('type') in ['future', 'swap'] or market.get('future') or market.get('swap'):
                                 if 'USDT' in symbol:
                                     clean_symbol = symbol.replace(':USDT', '')
                                     futures_symbols.append(clean_symbol)
-                        
                         futures_symbols = sorted(list(set(futures_symbols)))
-                        
                         if hasattr(self.ui, 'comboSymbol') and futures_symbols:
-                            # BU SATIRI EKLE - Signal'i geçici olarak disconnect et
                             self.ui.comboSymbol.blockSignals(True)
-                            
                             self.ui.comboSymbol.clear()
                             self.ui.comboSymbol.addItems(futures_symbols)
                             logger.info(f"Loaded {len(futures_symbols)} symbols on startup")
-                            
-                            # Signal'i tekrar aç
                             self.ui.comboSymbol.blockSignals(False)
-                            
-                            # ŞİMDİ thread başlat
                             if futures_symbols:
                                 self.start_price_updater(futures_symbols[0])
-                                
                 except Exception as e:
                     logger.error(f"Failed to load exchange data: {e}")
             else:
                 if hasattr(self.ui, 'lblConnectionStatus'):
                     self.ui.lblConnectionStatus.setText("⚠️ No Exchange Connected")
                     self.ui.lblConnectionStatus.setStyleSheet("color: #FF9800;")
-                
                 if hasattr(self.ui, 'lblBalance'):
                     self.ui.lblBalance.setText("$0.00")
-        
         except Exception as e:
             logger.error(f"Failed to load connection status: {e}")
     def setup_table_headers(self):
         """Configure table headers to stretch across full width"""
         from PyQt5.QtWidgets import QHeaderView
-        
-        # ============================================
-        # AÇIK POZİSYONLAR TABLOSU (9 sütun)
-        # ============================================
         header_pos = self.ui.tablePositions.horizontalHeader()
-        
-        # Stretch sütunlar
         header_pos.setSectionResizeMode(0, QHeaderView.Stretch)  # Sembol
         header_pos.setSectionResizeMode(2, QHeaderView.Stretch)  # Miktar
         header_pos.setSectionResizeMode(3, QHeaderView.Stretch)  # Giriş Fiyatı
@@ -180,45 +137,26 @@ class MainWindow(QMainWindow):
         header_pos.setSectionResizeMode(5, QHeaderView.Stretch)  # Kâr/Zarar
         header_pos.setSectionResizeMode(7, QHeaderView.Stretch)  # Likitasyon
         header_pos.setSectionResizeMode(8, QHeaderView.Stretch)  # İşlemler
-        
-        # Sabit genişlik sütunlar (içeriğe göre)
         header_pos.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Yön
         header_pos.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Kâr/Zarar %
-        
-        # ============================================
-        # AÇIK EMİRLER TABLOSU (8 sütun)
-        # ============================================
         header_ord = self.ui.tableOrders.horizontalHeader()
-        
-        # Stretch sütunlar
         header_ord.setSectionResizeMode(0, QHeaderView.Stretch)  # Sembol
         header_ord.setSectionResizeMode(3, QHeaderView.Stretch)  # Fiyat
         header_ord.setSectionResizeMode(4, QHeaderView.Stretch)  # Miktar
         header_ord.setSectionResizeMode(5, QHeaderView.Stretch)  # Dolum
         header_ord.setSectionResizeMode(6, QHeaderView.Stretch)  # Zaman
         header_ord.setSectionResizeMode(7, QHeaderView.Stretch)  # İşlemler
-        
-        # Sabit genişlik sütunlar
         header_ord.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Tip
         header_ord.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Yön
-        
-        # ============================================
-        # İŞLEM GEÇMİŞİ TABLOSU (8 sütun)
-        # ============================================
         header_hist = self.ui.tableHistory.horizontalHeader()
-        
-        # Stretch sütunlar
         header_hist.setSectionResizeMode(0, QHeaderView.Stretch)  # Zaman
         header_hist.setSectionResizeMode(1, QHeaderView.Stretch)  # Sembol
         header_hist.setSectionResizeMode(3, QHeaderView.Stretch)  # Fiyat
         header_hist.setSectionResizeMode(4, QHeaderView.Stretch)  # Miktar
         header_hist.setSectionResizeMode(5, QHeaderView.Stretch)  # Komisyon
         header_hist.setSectionResizeMode(6, QHeaderView.Stretch)  # Kâr/Zarar
-        
-        # Sabit genişlik sütunlar
         header_hist.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Yön
         header_hist.setSectionResizeMode(7, QHeaderView.ResizeToContents)  # Durum
-        
     def apply_dark_theme(self):
         """Load and apply dark theme stylesheet"""
         theme_path = Path(__file__).parent / "ui" / "raw" / "dark_theme.qss"
@@ -226,8 +164,6 @@ class MainWindow(QMainWindow):
             with open(theme_path, 'r', encoding='utf-8') as f:
                 self.setStyleSheet(f.read())
             logger.debug("Dark theme applied")
-
-
     def connect_menu_actions(self):
         """Connect menu actions to slots"""
         # File menu
