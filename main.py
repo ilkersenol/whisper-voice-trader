@@ -672,24 +672,32 @@ class MainWindow(QMainWindow):
 
 
     def on_paper_trading_changed(self, state: int):
-        """Paper trading checkbox değişince ikonları günceller (şimdilik sadece UI)."""
-        if hasattr(self, "order_executor"):
-            self.order_executor.set_paper_trading(enabled)
-        try:
-            enabled = (state == Qt.Checked)
+        """
+        Paper trading checkbox değişince:
+        - Backend'e mod bilgisini iletir
+        - UI ikonlarını günceller
+        """
+        # enabled HER KOŞULDA burada tanımlanıyor
+        enabled = (state == Qt.Checked)
 
-            # İkonlar varsa görünürlüklerini ayarla
-            if hasattr(self.ui, 'lblPaperIcon'):
+        try:
+            # Backend'e bildir (OrderExecutor varsa)
+            if hasattr(self, "order_executor") and self.order_executor is not None:
+                self.order_executor.set_paper_trading(enabled)
+
+            # UI ikonları
+            if hasattr(self.ui, "lblPaperIcon"):
                 self.ui.lblPaperIcon.setVisible(enabled)
-            if hasattr(self.ui, 'lblRealIcon'):
+            if hasattr(self.ui, "lblRealIcon"):
                 self.ui.lblRealIcon.setVisible(not enabled)
 
             mode = "PAPER" if enabled else "REAL"
-            logger.info(f"Trading mode changed (UI): {mode}")
+            logger.info(f"Trading mode changed (UI+backend): {mode}")
 
-            # İLERİDE: burada OrderExecutor.set_paper_trading(...) çağrılacak
         except Exception as e:
-            logger.error(f"Failed to handle paper trading toggle: {e}")
+            logger.error(f"on_paper_trading_changed failed: {e}", exc_info=True)
+            QMessageBox.critical(self, "Hata", f"Paper trading mod değişiminde hata:\n{e}")
+
 
 
     def on_order_button_clicked(self, side: str):
