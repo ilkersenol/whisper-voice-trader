@@ -74,8 +74,11 @@ class PriceUpdateThread(QThread):
                         'best_ask': best_ask,
                         'current_price': current_price,
                         'volume': ticker.get('quoteVolume', 0.0),
-                        'change_24h': ticker.get('percentage', 0.0)
+                        'change_24h': ticker.get('percentage', 0.0),
+                        'high_24h': ticker.get('high', 0.0),   # YENİ
+                        'low_24h': ticker.get('low', 0.0),     # YENİ
                     }
+
                     
                     self.price_updated.emit(price_data)
                     

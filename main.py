@@ -364,6 +364,41 @@ class MainWindow(QMainWindow):
                     self.ui.lblCurrentPrice.setStyleSheet(f"color: {color}; font-size: 20px; font-weight: bold;")
                 else:
                     self.ui.lblCurrentPrice.setText("N/A")
+
+                        # --- 24H STATS LABELS ---
+
+            # 24H Change %
+            if hasattr(self.ui, 'lbl24hChange'):
+                change = price_data.get('change_24h', 0.0)
+                if change is not None:
+                    self.ui.lbl24hChange.setText(f"{change:+.2f}%")
+                else:
+                    self.ui.lbl24hChange.setText("-")
+
+            # 24H Volume (USDT)
+            if hasattr(self.ui, 'lbl24hVolume'):
+                vol = price_data.get('volume', 0.0)
+                if vol is not None and vol > 0:
+                    self.ui.lbl24hVolume.setText(f"{vol:,.0f} USDT")
+                else:
+                    self.ui.lbl24hVolume.setText("-")
+
+            # 24H HIGH (USDT)
+            if hasattr(self.ui, 'lbl24hHigh'):
+                high = price_data.get('high_24h', 0.0)
+                if high is not None and high > 0:
+                    self.ui.lbl24hHigh.setText(f"{high:,.4f} USDT")
+                else:
+                    self.ui.lbl24hHigh.setText("-")
+
+            # 24H LOW (USDT)
+            if hasattr(self.ui, 'lbl24hLow'):
+                low = price_data.get('low_24h', 0.0)
+                if low is not None and low > 0:
+                    self.ui.lbl24hLow.setText(f"{low:,.4f} USDT")
+                else:
+                    self.ui.lbl24hLow.setText("-")
+
             
         except Exception as e:
             logger.error(f"Failed to update prices: {e}")
