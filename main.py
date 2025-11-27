@@ -57,8 +57,11 @@ class MainWindow(QMainWindow):
     def on_exchange_connection_updated(self, exchange_name, is_connected, data):
         """Update main window when exchange connection changes"""
         try:
+            # Current exchange durumunu güncelle
             if is_connected:
                 self.current_exchange = exchange_name
+
+            # Connection status label
             if hasattr(self.ui, 'lblConnectionStatus'):
                 if is_connected:
                     self.ui.lblConnectionStatus.setText(f"✅ {exchange_name.title()} Connected")
@@ -66,11 +69,15 @@ class MainWindow(QMainWindow):
                 else:
                     self.ui.lblConnectionStatus.setText(f"❌ {exchange_name.title()} Disconnected")
                     self.ui.lblConnectionStatus.setStyleSheet("color: #f44336; font-weight: bold;")
+
+            # Balance label
             balance_info = data.get('balance', {})
             if hasattr(self.ui, 'lblBalance') and balance_info:
                 usdt_balance = balance_info.get('USDT', 0.0)
                 self.ui.lblBalance.setText(f"${usdt_balance:,.2f}")
                 self.ui.lblBalance.setStyleSheet("color: #FFC107; font-size: 18px; font-weight: bold;")
+
+            # Symbol list
             symbols = data.get('symbols', [])
             if hasattr(self.ui, 'comboSymbol') and symbols:
                 self.ui.comboSymbol.clear()
@@ -78,9 +85,17 @@ class MainWindow(QMainWindow):
                 logger.info(f"Loaded {len(symbols)} symbols for {exchange_name}")
                 if symbols:
                     self.start_price_updater(symbols[0])
+
+            # Connect / Disconnect buton durumları
+            if hasattr(self.ui, 'btnConnect'):
+                self.ui.btnConnect.setEnabled(not is_connected)
+            if hasattr(self.ui, 'btnDisconnect'):
+                self.ui.btnDisconnect.setEnabled(is_connected)
+
             logger.info(f"Main window updated: {exchange_name} connection={is_connected}")
         except Exception as e:
             logger.error(f"Failed to update main window: {e}")
+
     def load_connection_status(self):
         """Load connection status on startup"""
         try:
@@ -556,6 +571,12 @@ class MainWindow(QMainWindow):
             # Disconnect button (EKLE)
         if hasattr(self.ui, 'btnDisconnect'):
             self.ui.btnDisconnect.clicked.connect(self.on_disconnect_clicked)
+
+        if hasattr(self.ui, 'btnConnect'):
+            self.ui.btnConnect.setEnabled(True)
+        if hasattr(self.ui, 'btnDisconnect'):
+            self.ui.btnDisconnect.setEnabled(False)
+
                 # Buy / Sell butonları
         if hasattr(self.ui, 'btnBuy'):
             self.ui.btnBuy.clicked.connect(lambda: self.on_order_button_clicked("buy"))
@@ -656,6 +677,14 @@ class MainWindow(QMainWindow):
             
             # Update UI
             self.current_exchange = exchange_name
+
+
+            # Buton durumlarını güncelle
+            if hasattr(self.ui, 'btnConnect'):
+                self.ui.btnConnect.setEnabled(False)
+            if hasattr(self.ui, 'btnDisconnect'):
+                self.ui.btnDisconnect.setEnabled(True)
+
             
             if hasattr(self.ui, 'lblConnectionStatus'):
                 self.ui.lblConnectionStatus.setText(f"✅ {exchange_name.title()} Connected")
@@ -876,76 +905,83 @@ class MainWindow(QMainWindow):
         """Disconnect from current exchange - Using ExchangeManager"""
         try:
             exchange_name = self.current_exchange
-            
+
             logger.info(f"Disconnecting from {exchange_name}...")
-            
+
             # 1. Stop price updater thread
             if self.price_updater_thread:
                 logger.info("Stopping price updater thread...")
-                
+
                 try:
                     self.price_updater_thread.price_updated.disconnect(self.on_price_updated)
                     self.price_updater_thread.error_occurred.disconnect(self.on_price_error)
-                except:
+                except Exception:
                     pass
-                
+
                 if self.price_updater_thread.isRunning():
                     self.price_updater_thread.stop()
                     if not self.price_updater_thread.wait(3000):
                         logger.warning("Thread did not stop, terminating...")
                         self.price_updater_thread.terminate()
                         self.price_updater_thread.wait(1000)
-                
+
                 self.price_updater_thread = None
                 logger.info("Price updater stopped")
-            
+
             # 2. Disconnect using ExchangeManager
             if exchange_name:
                 self.exchange_manager.disconnect_exchange(exchange_name)
-            
+
             # 3. Clear current exchange
             self.current_exchange = None
-            
+
             # 4. Reset UI - Connection Status
             if hasattr(self.ui, 'lblConnectionStatus'):
                 self.ui.lblConnectionStatus.setText("⚠️ Disconnected")
                 self.ui.lblConnectionStatus.setStyleSheet("color: #FF9800; font-weight: bold;")
-            
+
             # 5. Reset UI - Balance
             if hasattr(self.ui, 'lblBalance'):
                 self.ui.lblBalance.setText("$0.00")
                 self.ui.lblBalance.setStyleSheet("color: #9E9E9E; font-size: 18px;")
-            
+
             # 6. Clear symbols
             if hasattr(self.ui, 'comboSymbol'):
                 self.ui.comboSymbol.blockSignals(True)
                 self.ui.comboSymbol.clear()
                 self.ui.comboSymbol.blockSignals(False)
-            
+
             # 7. Reset price labels
             if hasattr(self.ui, 'lblBestAsk'):
                 self.ui.lblBestAsk.setText("N/A")
                 self.ui.lblBestAsk.setStyleSheet("")
-            
+
             if hasattr(self.ui, 'lblBestBid'):
                 self.ui.lblBestBid.setText("N/A")
                 self.ui.lblBestBid.setStyleSheet("")
-            
+
             if hasattr(self.ui, 'lblCurrentPrice'):
                 self.ui.lblCurrentPrice.setText("N/A")
                 self.ui.lblCurrentPrice.setStyleSheet("color: #9E9E9E; font-size: 20px;")
-            
+
+            # 8. Connect / Disconnect butonlarını resetle
+            if hasattr(self.ui, 'btnConnect'):
+                self.ui.btnConnect.setEnabled(True)
+            if hasattr(self.ui, 'btnDisconnect'):
+                self.ui.btnDisconnect.setEnabled(False)
+
             logger.info(f"Disconnected from {exchange_name}")
-            
+
             QMessageBox.information(
                 self,
                 "Disconnected",
                 f"Successfully disconnected from {exchange_name.title()}"
             )
-            
+
         except Exception as e:
             logger.error(f"Disconnect failed: {e}")
             raise
+
 
     def open_exchange_settings(self, exchange_name):
         """Open API settings dialog for exchange"""
