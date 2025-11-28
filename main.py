@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
         self.current_exchange = None  
         self.symbol_change_timer = None 
         self.ensure_voice_commands_table()
+        self.voice_commands = []
         logger.info("MainWindow initialized")
         self.apply_dark_theme()
         self.setWindowTitle("Whisper Voice Trader - v1.0.0")
