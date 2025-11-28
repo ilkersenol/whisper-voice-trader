@@ -122,18 +122,21 @@ CREATE TABLE IF NOT EXISTS trades (
 
 CREATE TABLE IF NOT EXISTS voice_commands (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    raw_text TEXT NOT NULL,
-    parsed_intent TEXT,
-    parsed_symbol TEXT,
-    parsed_quantity REAL,
-    parsed_price REAL,
-    parsed_order_type TEXT,
-    is_successful BOOLEAN DEFAULT 0,
-    error_message TEXT,
-    order_id INTEGER,
-    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id)
+    category TEXT NOT NULL,
+    phrase TEXT NOT NULL,
+    language TEXT DEFAULT 'tr',
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT OR IGNORE INTO voice_commands (category, phrase, language) VALUES
+    ('BUY', 'al', 'tr'),
+    ('BUY', 'satin al', 'tr'),
+    ('BUY', 'long', 'tr'),
+    ('SELL', 'sat', 'tr'),
+    ('SELL', 'short', 'tr'),
+    ('STOP', 'durdur', 'tr'),
+    ('STOP', 'iptal', 'tr');
 
 CREATE TABLE IF NOT EXISTS command_keywords (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
