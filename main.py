@@ -24,6 +24,9 @@ from core.exchange_manager import get_exchange_manager
 from core.order_executor import OrderExecutor, OrderParams, OrderResult
 from utils.config_manager import ConfigManager
 from ui.generated.ui_command_keywords_dialog import Ui_CommandKeywordsDialog  
+from core.whisper_engine import WhisperEngine, WhisperSettings
+from core.voice_listener import VoiceListener
+
 
 
 
@@ -56,6 +59,15 @@ class MainWindow(QMainWindow):
         self.setup_table_headers()
         self.connect_menu_actions()
         self.connect_button_actions()
+       # Sesli komutlar için Whisper motoru ve dinleyici
+        voice_settings = WhisperSettings(
+            model_size="tiny",     # şimdilik sabit, sonra Preferences'tan alacağız
+            use_gpu=True,          # GPU checkbox ayarına göre güncelleyeceğiz
+            language="tr",
+        )
+        self.whisper_engine = WhisperEngine(voice_settings)
+        self.voice_listener: VoiceListener = None
+
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
 
@@ -633,6 +645,115 @@ class MainWindow(QMainWindow):
             logger.error(f"Failed to open command dialog: {e}")
             QMessageBox.critical(self, "Hata", f"Komut penceresi açılamadı:\n{e}")
 
+    def on_voice_order_clicked(self):
+        """Kısa süreli ses kaydı başlatır ve sonucu Whisper ile çözer."""
+        try:
+            # Zaten bir dinleyici çalışıyorsa tekrar başlatma
+            if hasattr(self, "voice_listener") and self.voice_listener is not None:
+                if self.voice_listener.isRunning():
+                    QMessageBox.information(
+                        self,
+                        "Sesli Emir",
+                        "Zaten dinleniyor. Lütfen mevcut işlemin bitmesini bekleyin.",
+                    )
+                    return
+
+            # Yeni dinleyici oluştur
+            self.voice_listener = VoiceListener(
+                whisper_engine=self.whisper_engine,
+                duration=5.0,          # 5 saniye konuşma süresi
+                sample_rate=16_000,
+                parent=self,
+            )
+            self.voice_listener.transcript_ready.connect(
+                self.on_voice_transcript_ready
+            )
+            self.voice_listener.error_occurred.connect(
+                self.on_voice_error
+            )
+            self.voice_listener.status_changed.connect(
+                self.on_voice_status_changed
+            )
+
+            self.voice_listener.start()
+
+        except Exception as e:
+            logger.error(f"Voice order start failed: {e}")
+            QMessageBox.critical(
+                self,
+                "Sesli Emir Hatası",
+                f"Sesli emir başlatılamadı:\n{e}",
+            )
+
+    def on_voice_transcript_ready(self, transcript: str):
+        """Whisper'dan gelen metni komutlarla eşleştirir."""
+        transcript = (transcript or "").strip()
+        if not transcript:
+            QMessageBox.information(
+                self,
+                "Sesli Emir",
+                "Herhangi bir sesli komut algılanamadı.",
+            )
+            return
+
+        logger.info(f"Voice transcript: {transcript}")
+
+        category, phrase = self.match_voice_command(transcript)
+
+        if not category:
+            QMessageBox.information(
+                self,
+                "Sesli Emir",
+                f"Metin algılandı ama tanımlı bir komut bulunamadı.\n\n"
+                f"Metin: \"{transcript}\"",
+            )
+            return
+
+        # Şimdilik SADECE bilgilendirme yapıyoruz, işlem göndermiyoruz.
+        QMessageBox.information(
+            self,
+            "Sesli Komut Algılandı",
+            f"Metin: \"{transcript}\"\n"
+            f"Eşleşen komut: [{category}] \"{phrase}\"",
+        )
+
+        # İLERİDE: Burada BUY/SELL/REVERSE/STOP aksiyonlarını çağıracağız.
+        # Örn:
+        # if category == "BUY":
+        #     self.on_order_button_clicked("buy")
+        # elif category == "SELL":
+        #     self.on_order_button_clicked("sell")
+        # ...
+
+    def on_voice_status_changed(self, status: str):
+        """VoiceListener durumuna göre Pasif Mod UI'ını günceller."""
+        try:
+            if not hasattr(self.ui, 'lblWakeStatus'):
+                return
+
+            if status == "listening":
+                self.ui.lblWakeStatus.setText("🎙️ Dinleniyor...")
+            elif status == "transcribing":
+                self.ui.lblWakeStatus.setText("🧠 Çözümleniyor...")
+            else:
+                # idle
+                self.ui.lblWakeStatus.setText("🎙️ Pasif Mod")
+        except Exception as e:
+            logger.error(f"on_voice_status_changed error: {e}")
+
+    def on_voice_error(self, message: str):
+        logger.error(f"VoiceListener error: {message}")
+        QMessageBox.critical(
+            self,
+            "Sesli Emir Hatası",
+            message,
+        )
+        # Durumu pasife çek
+        self.on_voice_status_changed("idle")
+
+
+
+
 
     def open_emergency(self):
         """Open Emergency Stop dialog"""
@@ -753,6 +874,10 @@ class MainWindow(QMainWindow):
             self.ui.sliderLeverage.valueChanged.connect(self.on_leverage_changed)
         if hasattr(self.ui, 'btnAddCommand'):
             self.ui.btnAddCommand.clicked.connect(self.open_command_keywords_dialog)
+                # Sesli Emir butonu
+        if hasattr(self.ui, 'btnVoiceOrder'):
+            self.ui.btnVoiceOrder.clicked.connect(self.on_voice_order_clicked)
+
 
 
 
