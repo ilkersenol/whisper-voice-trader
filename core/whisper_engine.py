@@ -3,15 +3,6 @@ from typing import Optional, Tuple, List
 import threading
 
 import numpy as np
-from faster_whisper import WhisperModel  # offline Whisper (zorunlu)
-
-# Torch OPSIYONEL: sadece varsa GPU tespiti için kullanacağız
-try:
-    import torch  # type: ignore
-    _HAS_TORCH = True
-except ImportError:
-    torch = None  # type: ignore
-    _HAS_TORCH = False
 
 
 class WhisperSettings:
@@ -32,10 +23,11 @@ class WhisperSettings:
 
 class WhisperEngine:
     """
-    Offline Whisper (faster-whisper) motoru.
+    Offline Whisper motoru (faster-whisper backend).
     - Modeli lazy-load eder (ilk kullanımda yükler, sonra cache)
     - GPU/CPU cihazını otomatik seçer
     - Numpy audio buffer alıp transcript üretir
+    - Torch / faster-whisper import hataları uygulamayı ÇÖKERTMEZ
     """
 
     def __init__(
@@ -60,7 +52,7 @@ class WhisperEngine:
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         self._model_lock = threading.Lock()
-        self._model: Optional[WhisperModel] = None
+        self._model = None
         self._device: Optional[str] = None
         self._compute_type: Optional[str] = None
 
@@ -103,20 +95,32 @@ class WhisperEngine:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _get_or_load_model(self) -> WhisperModel:
+    def _get_or_load_model(self):
         """
         Modeli ilk erişimde yükler, sonra bellekte tutar.
-        Thread-safe.
+        Burada faster-whisper import edilir ki import hatası
+        tüm uygulamayı değil sadece sesli komutu etkilesin.
         """
         with self._model_lock:
             if self._model is not None:
                 return self._model
 
+            # >>> BURADA LAZY IMPORT <<<
+            try:
+                from faster_whisper import WhisperModel
+            except Exception as e:
+                # Buradan atılan hata VoiceListener içinde yakalanacak
+                raise RuntimeError(
+                    "Whisper motoru (faster-whisper) yüklenemedi. "
+                    "Python 3.12 ile uyumlu bir faster-whisper / ctranslate2 / "
+                    "Torch kurulumu gereklidir.\n\n"
+                    f"Teknik detay: {e}"
+                ) from e
+
             device, compute_type = self._detect_device()
             self._device = device
             self._compute_type = compute_type
 
-            # faster-whisper: WhisperModel(model_size, device, compute_type, download_root)
             self._model = WhisperModel(
                 self.settings.model_size,
                 device=device,
@@ -128,19 +132,19 @@ class WhisperEngine:
     def _detect_device(self) -> Tuple[str, str]:
         """
         Cihaz seçimi:
-        - Kullanıcı GPU istiyorsa ve torch kuruluysa → cuda/float16 (mümkünse)
-        - Aksi halde → cpu/int8
-        Torch yoksa veya hata verirse sessizce CPU'ya düşer.
+        - Kullanıcı GPU istiyorsa → torch import etmeyi DENE
+        - Herhangi bir hata alırsak (ImportError, OSError, DLL hatası vs.)
+          sessizce CPU'ya düş.
         """
-        # Kullanıcı GPU istiyor VE torch gerçekten kuruluysa dene
-        if self.settings.use_gpu and _HAS_TORCH:
+        if self.settings.use_gpu:
             try:
+                import torch  # type: ignore
+
                 if torch.cuda.is_available():  # type: ignore[attr-defined]
                     return "cuda", "float16"
             except Exception:
-                # Torch bozuk veya CUDA hatalıysa CPU fallback
+                # Torch kurulu değil / bozuk / DLL hatası → CPU fallback
                 pass
 
         # Varsayılan / fallback: CPU
-        # faster-whisper dökümantasyonu CPU için genelde int8 öneriyor.
         return "cpu", "int8"
