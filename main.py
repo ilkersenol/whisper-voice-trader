@@ -23,6 +23,7 @@ from database.db_manager import get_db
 from core.exchange_manager import get_exchange_manager
 from core.order_executor import OrderExecutor, OrderParams, OrderResult
 from utils.config_manager import ConfigManager
+from ui.generated.ui_command_keywords_dialog import Ui_CommandKeywordsDialog  
 
 
 
@@ -46,6 +47,7 @@ class MainWindow(QMainWindow):
         self.price_updater_thread = None  
         self.current_exchange = None  
         self.symbol_change_timer = None 
+        self.ensure_voice_commands_table()
         logger.info("MainWindow initialized")
         self.apply_dark_theme()
         self.setWindowTitle("Whisper Voice Trader - v1.0.0")
@@ -54,6 +56,26 @@ class MainWindow(QMainWindow):
         self.connect_button_actions()
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
+
+    def ensure_voice_commands_table(self):
+        """Sesli komut eşleşmeleri için tabloyu oluşturur (yoksa)."""
+        try:
+            self.db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS voice_commands (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category TEXT NOT NULL,
+                    phrase   TEXT NOT NULL,
+                    language TEXT DEFAULT 'tr',
+                    is_active INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            logger.info("voice_commands table ensured")
+        except Exception as e:
+            logger.error(f"Failed to ensure voice_commands table: {e}")
+
     def on_exchange_connection_updated(self, exchange_name, is_connected, data):
         """Update main window when exchange connection changes"""
         try:
@@ -473,6 +495,64 @@ class MainWindow(QMainWindow):
             logger.error(f"Failed to open preferences: {e}")
             QMessageBox.critical(self, "Error", f"Failed to open preferences:\n{str(e)}")
 
+
+    def open_command_keywords_dialog(self):
+        """'Komut Ekle' penceresini açar ve girilen komutu DB'ye kaydeder."""
+        try:
+            dialog = QDialog(self)
+            ui = Ui_CommandKeywordsDialog()
+            ui.setupUi(dialog)
+
+            # Varsayılanlar
+            ui.cmbCategory.setCurrentIndex(0)
+            ui.lineWord.clear()
+
+            result = dialog.exec_()
+            if result != QDialog.Accepted:
+                logger.info("Command dialog cancelled")
+                return
+
+            category_text = ui.cmbCategory.currentText()
+            phrase = ui.lineWord.text().strip()
+
+            if not phrase:
+                QMessageBox.warning(self, "Geçersiz komut", "Lütfen bir kelime veya cümle girin.")
+                return
+
+            # UI'daki görünen metni internal kategori koduna çevir
+            category_map = {
+                "Al (BUY)": "BUY",
+                "Sat (SELL)": "SELL",
+                "Ters Çevir (REVERSE)": "REVERSE",
+                "Yok say (STOP)": "STOP",
+            }
+            category = category_map.get(category_text, "OTHER")
+
+            language = "tr"  # Şimdilik sabit; ileride comboLanguage ile ilişkilendirilebilir
+
+            # SQL string içinde tek tırnak sorun çıkarmasın diye kaçır
+            safe_phrase = phrase.replace("'", "''")
+            safe_category = category.replace("'", "''")
+            safe_language = language.replace("'", "''")
+
+            sql = (
+                "INSERT INTO voice_commands (category, phrase, language, is_active) "
+                f"VALUES ('{safe_category}', '{safe_phrase}', '{safe_language}', 1)"
+            )
+
+            try:
+                self.db.execute(sql)
+                logger.info(f"Voice command added: [{category}] {phrase}")
+                QMessageBox.information(self, "Komut kaydedildi", f"\"{phrase}\" komutu kaydedildi.")
+            except Exception as e:
+                logger.error(f"Failed to save voice command: {e}")
+                QMessageBox.critical(self, "Hata", f"Komut kaydedilemedi:\n{e}")
+
+        except Exception as e:
+            logger.error(f"Failed to open command dialog: {e}")
+            QMessageBox.critical(self, "Hata", f"Komut penceresi açılamadı:\n{e}")
+
+
     def open_emergency(self):
         """Open Emergency Stop dialog"""
         try:
@@ -590,6 +670,8 @@ class MainWindow(QMainWindow):
         # Leverage slider
         if hasattr(self.ui, 'sliderLeverage'):
             self.ui.sliderLeverage.valueChanged.connect(self.on_leverage_changed)
+        if hasattr(self.ui, 'btnAddCommand'):
+            self.ui.btnAddCommand.clicked.connect(self.open_command_keywords_dialog)
 
 
 

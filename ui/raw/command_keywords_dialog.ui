@@ -47,6 +47,11 @@
        </item>
        <item>
         <property name="text">
+         <string>Ters Çevir (REVERSE)</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>Yok say (STOP)</string>
         </property>
        </item>
