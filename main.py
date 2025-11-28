@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
         self.current_exchange = None  
         self.symbol_change_timer = None 
         self.ensure_voice_commands_table()
+        self.load_voice_commands()
         self.voice_commands = []
         logger.info("MainWindow initialized")
         self.apply_dark_theme()
@@ -76,6 +77,84 @@ class MainWindow(QMainWindow):
             logger.info("voice_commands table ensured")
         except Exception as e:
             logger.error(f"Failed to ensure voice_commands table: {e}")
+    @staticmethod
+    def normalize_text(text: str) -> str:
+        """Karşılaştırma için metni normalize eder (küçük harf, TR karakter düzeltme)."""
+        if not text:
+            return ""
+        text = text.strip().lower()
+
+        # Türkçe karakter basitleştirme (isteğe göre)
+        replacements = {
+            "ı": "i",
+            "ğ": "g",
+            "ü": "u",
+            "ş": "s",
+            "ö": "o",
+            "ç": "c",
+        }
+        for src, dst in replacements.items():
+            text = text.replace(src, dst)
+
+        return text
+    
+    def load_voice_commands(self):
+        """Aktif sesli komutları DB'den okuyup RAM'e cache eder."""
+        try:
+            rows = self.db.execute(
+                "SELECT category, phrase, language "
+                "FROM voice_commands WHERE is_active = 1"
+            ).fetchall()
+
+            self.voice_commands = []
+            for row in rows:
+                category = row[0]
+                phrase = row[1]
+                language = row[2] if len(row) > 2 else "tr"
+
+                if not phrase:
+                    continue
+
+                self.voice_commands.append(
+                    {
+                        "category": category,
+                        "phrase": phrase,
+                        "language": language or "tr",
+                        "norm_phrase": self.normalize_text(phrase),
+                    }
+                )
+
+            logger.info(f"Loaded {len(self.voice_commands)} voice commands")
+
+        except Exception as e:
+            logger.error(f"Failed to load voice commands: {e}")
+            self.voice_commands = []
+
+    def match_voice_command(self, transcript: str):
+        """
+        Whisper'dan gelen transcript içinde tanımlı komutlardan biri geçiyorsa
+        category + orijinal phrase'i döndürür, yoksa (None, None).
+        """
+        if not transcript:
+            return None, None
+
+        if not self.voice_commands:
+            return None, None
+
+        norm_text = self.normalize_text(transcript)
+
+        for cmd in self.voice_commands:
+            key = cmd.get("norm_phrase")
+            if not key:
+                continue
+
+            if key in norm_text:
+                # İlk eşleşen komutu döndürüyoruz
+                return cmd.get("category"), cmd.get("phrase")
+
+        return None, None
+
+
 
     def on_exchange_connection_updated(self, exchange_name, is_connected, data):
         """Update main window when exchange connection changes"""
@@ -545,6 +624,7 @@ class MainWindow(QMainWindow):
                 self.db.execute(sql)
                 logger.info(f"Voice command added: [{category}] {phrase}")
                 QMessageBox.information(self, "Komut kaydedildi", f"\"{phrase}\" komutu kaydedildi.")
+                self.load_voice_commands()
             except Exception as e:
                 logger.error(f"Failed to save voice command: {e}")
                 QMessageBox.critical(self, "Hata", f"Komut kaydedilemedi:\n{e}")
