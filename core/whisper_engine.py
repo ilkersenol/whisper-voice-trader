@@ -26,8 +26,8 @@ class WhisperEngine:
     Offline Whisper motoru (faster-whisper backend).
     - Modeli lazy-load eder (ilk kullanımda yükler, sonra cache)
     - GPU/CPU cihazını otomatik seçer
+    - GPU compute type'ı karta göre otomatik belirler
     - Numpy audio buffer alıp transcript üretir
-    - Torch / faster-whisper import hataları uygulamayı ÇÖKERTMEZ
     """
 
     def __init__(
@@ -91,6 +91,15 @@ class WhisperEngine:
 
         return " ".join(texts).strip()
 
+    def get_device_info(self) -> dict:
+        """Mevcut cihaz bilgisini döndürür."""
+        return {
+            "device": self._device,
+            "compute_type": self._compute_type,
+            "model_size": self.settings.model_size,
+            "gpu_enabled": self.settings.use_gpu,
+        }
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -98,22 +107,17 @@ class WhisperEngine:
     def _get_or_load_model(self):
         """
         Modeli ilk erişimde yükler, sonra bellekte tutar.
-        Burada faster-whisper import edilir ki import hatası
-        tüm uygulamayı değil sadece sesli komutu etkilesin.
         """
         with self._model_lock:
             if self._model is not None:
                 return self._model
 
-            # >>> BURADA LAZY IMPORT <<<
             try:
                 from faster_whisper import WhisperModel
             except Exception as e:
-                # Buradan atılan hata VoiceListener içinde yakalanacak
                 raise RuntimeError(
                     "Whisper motoru (faster-whisper) yüklenemedi. "
-                    "Python 3.12 ile uyumlu bir faster-whisper / ctranslate2 / "
-                    "Torch kurulumu gereklidir.\n\n"
+                    "Lütfen 'pip install faster-whisper' komutunu çalıştırın.\n\n"
                     f"Teknik detay: {e}"
                 ) from e
 
@@ -121,30 +125,51 @@ class WhisperEngine:
             self._device = device
             self._compute_type = compute_type
 
+            print(f"[WhisperEngine] Model yükleniyor: {self.settings.model_size}")
+            print(f"[WhisperEngine] Device: {device}, Compute Type: {compute_type}")
+
             self._model = WhisperModel(
                 self.settings.model_size,
                 device=device,
                 compute_type=compute_type,
                 download_root=str(self.models_dir),
             )
+            
+            print(f"[WhisperEngine] Model başarıyla yüklendi!")
             return self._model
 
     def _detect_device(self) -> Tuple[str, str]:
         """
-        Cihaz seçimi:
-        - Kullanıcı GPU istiyorsa → torch import etmeyi DENE
-        - Herhangi bir hata alırsak (ImportError, OSError, DLL hatası vs.)
-          sessizce CPU'ya düş.
+        Cihaz ve compute type seçimi:
+        - GPU isteniyorsa → CUDA kontrol et
+        - GPU varsa → kartın float16 desteğini kontrol et
+        - Destekliyorsa float16, değilse float32
+        - GPU yoksa veya hata olursa → CPU + int8
         """
         if self.settings.use_gpu:
             try:
-                import torch  # type: ignore
+                import torch
 
-                if torch.cuda.is_available():  # type: ignore[attr-defined]
-                    return "cuda", "float16"
-            except Exception:
-                # Torch kurulu değil / bozuk / DLL hatası → CPU fallback
-                pass
+                if torch.cuda.is_available():
+                    # GPU bilgisini al
+                    gpu_name = torch.cuda.get_device_name(0).lower()
+                    compute_capability = torch.cuda.get_device_capability(0)
+                    
+                    print(f"[WhisperEngine] GPU algılandı: {gpu_name}")
+                    print(f"[WhisperEngine] Compute Capability: {compute_capability}")
+                    
+                    # Compute Capability 7.0+ olan kartlar float16 destekler
+                    # GTX 1050 = 6.1, RTX 2060+ = 7.5+, RTX 3060+ = 8.6+
+                    if compute_capability[0] >= 7:
+                        print("[WhisperEngine] float16 desteği var, kullanılıyor.")
+                        return "cuda", "float16"
+                    else:
+                        print("[WhisperEngine] float16 desteği yok, float32 kullanılıyor.")
+                        return "cuda", "float32"
+                        
+            except Exception as e:
+                print(f"[WhisperEngine] GPU algılama hatası: {e}")
+                print("[WhisperEngine] CPU moduna geçiliyor.")
 
         # Varsayılan / fallback: CPU
         return "cpu", "int8"
