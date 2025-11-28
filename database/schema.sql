@@ -196,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_symbol ON orders(symbol);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
 CREATE INDEX IF NOT EXISTS idx_trades_traded_at ON trades(traded_at);
-CREATE INDEX IF NOT EXISTS idx_voice_commands_executed_at ON voice_commands(executed_at);
+CREATE INDEX IF NOT EXISTS idx_voice_commands_category ON voice_commands(category);
 CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date);
 
 CREATE TRIGGER IF NOT EXISTS update_settings_timestamp 
