@@ -99,6 +99,13 @@ class WhisperEngine:
             "model_size": self.settings.model_size,
             "gpu_enabled": self.settings.use_gpu,
         }
+    
+    def preload_model(self):
+            """
+            Modeli önceden yükler.
+            Ana thread'de çağırılmalı - QThread içinde model yüklemek crash yapabilir.
+            """
+            self._get_or_load_model()
 
     # ------------------------------------------------------------------
     # Internal helpers

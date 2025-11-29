@@ -67,7 +67,12 @@ class MainWindow(QMainWindow):
         )
         self.whisper_engine = WhisperEngine(voice_settings)
         self.voice_listener: VoiceListener = None
-
+        try:
+            logger.info("Whisper modeli önceden yükleniyor...")
+            self.whisper_engine.preload_model()
+            logger.info("Whisper modeli hazır!")
+        except Exception as e:
+            logger.warning(f"Whisper modeli yüklenemedi: {e}")
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
 
