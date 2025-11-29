@@ -59,15 +59,22 @@ class MainWindow(QMainWindow):
         self.setup_table_headers()
         self.connect_menu_actions()
         self.connect_button_actions()
-       # Sesli komutlar için Whisper motoru ve dinleyici
-        voice_settings = WhisperSettings(
-            model_size="tiny",     # şimdilik sabit, sonra Preferences'tan alacağız
-            use_gpu=True,          # GPU checkbox ayarına göre güncelleyeceğiz
-            language="tr",
-        )
-        self.whisper_engine = WhisperEngine(voice_settings)
-        self.voice_listener: VoiceListener = None
+
+        # Sesli komutlar için Whisper motoru ve dinleyici
+       # GEÇİCİ DEVRE DIŞI - DEBUG
+        self.whisper_engine = None
+        self.voice_listener = None
         self._whisper_ready = False
+        logger.info("Whisper DEVRE DISI (debug modu)")
+       # Sesli komutlar için Whisper motoru ve dinleyici
+       # voice_settings = WhisperSettings(
+       #     model_size="tiny",     # şimdilik sabit, sonra Preferences'tan alacağız
+       #     use_gpu=True,          # GPU checkbox ayarına göre güncelleyeceğiz
+       #     language="tr",
+       # )
+       # self.whisper_engine = WhisperEngine(voice_settings)
+       # self.voice_listener: VoiceListener = None
+       # self._whisper_ready = False
 
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
@@ -1336,18 +1343,18 @@ def main():
     logger.info("Application started successfully (Maximized)")
     
     # Whisper modelini pencere açıldıktan sonra yükle
-    def load_whisper_delayed():
-        try:
-            logger.info("Whisper modeli yükleniyor (gecikmeli)...")
-            window.whisper_engine.preload_model()
-            window._whisper_ready = True
-            logger.info("Whisper modeli hazır!")
-        except Exception as e:
-            logger.error(f"Whisper modeli yüklenemedi: {e}")
-            window._whisper_ready = False
-    
-    from PyQt5.QtCore import QTimer
-    QTimer.singleShot(1000, load_whisper_delayed)
+   # def load_whisper_delayed():
+   #     try:
+   #         logger.info("Whisper modeli yükleniyor (gecikmeli)...")
+   #         window.whisper_engine.preload_model()
+   #         window._whisper_ready = True
+   #         logger.info("Whisper modeli hazır!")
+   #     except Exception as e:
+   #         logger.error(f"Whisper modeli yüklenemedi: {e}")
+   #         window._whisper_ready = False
+   # 
+   # from PyQt5.QtCore import QTimer
+   # QTimer.singleShot(1000, load_whisper_delayed)
     return app.exec_()
 
 if __name__ == "__main__":
