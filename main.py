@@ -109,12 +109,16 @@ class MainWindow(QMainWindow):
             logger.error(f"Failed to ensure voice_commands table: {e}")
     @staticmethod
     def normalize_text(text: str) -> str:
-        """Karşılaştırma için metni normalize eder (küçük harf, TR karakter düzeltme)."""
+        """Karşılaştırma için metni normalize eder (küçük harf, TR karakter düzeltme, noktalama temizleme)."""
         if not text:
             return ""
         text = text.strip().lower()
 
-        # Türkçe karakter basitleştirme (isteğe göre)
+        # Noktalama işaretlerini temizle
+        import re
+        text = re.sub(r'[.,!?;:\'"()]+', '', text)
+
+        # Türkçe karakter basitleştirme
         replacements = {
             "ı": "i",
             "ğ": "g",
@@ -126,7 +130,7 @@ class MainWindow(QMainWindow):
         for src, dst in replacements.items():
             text = text.replace(src, dst)
 
-        return text
+        return text.strip()
     
     def load_voice_commands(self):
         """Aktif sesli komutları DB'den okuyup RAM'e cache eder."""
