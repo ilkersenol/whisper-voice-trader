@@ -21,10 +21,88 @@ class WhisperSettings:
         self.language = language
 
 
+# Global preloaded model - QApplication'dan ÖNCE yüklenir
+_PRELOADED_WHISPER_MODEL = None
+_PRELOADED_DEVICE = None
+_PRELOADED_COMPUTE_TYPE = None
+
+
+def preload_whisper_model(model_size: str = "tiny"):
+    """
+    Whisper modelini QApplication oluşturulmadan ÖNCE yükler.
+    Bu fonksiyon main.py'nin en başında çağrılmalı.
+    """
+    global _PRELOADED_WHISPER_MODEL, _PRELOADED_DEVICE, _PRELOADED_COMPUTE_TYPE
+    
+    if _PRELOADED_WHISPER_MODEL is not None:
+        print("[WhisperEngine] Model zaten yüklü, atlanıyor.")
+        return True
+    
+    print(f"[WhisperEngine] Model önceden yükleniyor: {model_size}")
+    
+    try:
+        from faster_whisper import WhisperModel
+        import torch
+        
+        # GPU kontrolü
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0).lower()
+            compute_capability = torch.cuda.get_device_capability(0)
+            
+            print(f"[WhisperEngine] GPU algılandı: {gpu_name}")
+            print(f"[WhisperEngine] Compute Capability: {compute_capability}")
+            
+            # Compute Capability 7.0+ olan kartlar float16 destekler
+            if compute_capability[0] >= 7:
+                device = "cuda"
+                compute_type = "float16"
+                print("[WhisperEngine] float16 desteği var, kullanılıyor.")
+            else:
+                device = "cuda"
+                compute_type = "float32"
+                print("[WhisperEngine] float16 desteği yok, float32 kullanılıyor.")
+        else:
+            device = "cpu"
+            compute_type = "int8"
+            print("[WhisperEngine] CUDA bulunamadı, CPU modu.")
+        
+        # Modeli yükle
+        print(f"[WhisperEngine] Device: {device}, Compute Type: {compute_type}")
+        _PRELOADED_WHISPER_MODEL = WhisperModel(
+            model_size,
+            device=device,
+            compute_type=compute_type,
+        )
+        _PRELOADED_DEVICE = device
+        _PRELOADED_COMPUTE_TYPE = compute_type
+        
+        print("[WhisperEngine] Model başarıyla yüklendi!")
+        return True
+        
+    except Exception as e:
+        print(f"[WhisperEngine] CUDA ile yükleme başarısız: {e}")
+        print("[WhisperEngine] CPU modunda deneniyor...")
+        
+        try:
+            from faster_whisper import WhisperModel
+            _PRELOADED_WHISPER_MODEL = WhisperModel(
+                model_size,
+                device="cpu",
+                compute_type="int8",
+            )
+            _PRELOADED_DEVICE = "cpu"
+            _PRELOADED_COMPUTE_TYPE = "int8"
+            print("[WhisperEngine] Model CPU modunda yüklendi!")
+            return True
+        except Exception as e2:
+            print(f"[WhisperEngine] Model yüklenemedi: {e2}")
+            return False
+
+
 class WhisperEngine:
     """
     Offline Whisper motoru (faster-whisper backend).
-    - Modeli lazy-load eder (ilk kullanımda yükler, sonra cache)
+    - Önceden yüklenmiş modeli kullanır (preload_whisper_model ile)
     - GPU/CPU cihazını otomatik seçer
     - GPU compute type'ı karta göre otomatik belirler
     - Numpy audio buffer alıp transcript üretir
@@ -101,11 +179,11 @@ class WhisperEngine:
         }
     
     def preload_model(self):
-            """
-            Modeli önceden yükler.
-            Ana thread'de çağırılmalı - QThread içinde model yüklemek crash yapabilir.
-            """
-            self._get_or_load_model()
+        """
+        Modeli önceden yükler.
+        Ana thread'de çağırılmalı - QThread içinde model yüklemek crash yapabilir.
+        """
+        self._get_or_load_model()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -113,12 +191,25 @@ class WhisperEngine:
 
     def _get_or_load_model(self):
         """
-        Modeli ilk erişimde yükler, sonra bellekte tutar.
+        Modeli döndürür - önceden yüklenmişse onu kullanır.
         """
+        global _PRELOADED_WHISPER_MODEL, _PRELOADED_DEVICE, _PRELOADED_COMPUTE_TYPE
+        
         with self._model_lock:
             if self._model is not None:
                 return self._model
 
+            # Önceden yüklenmiş model var mı?
+            if _PRELOADED_WHISPER_MODEL is not None:
+                print("[WhisperEngine] Önceden yüklenmiş model kullanılıyor")
+                self._model = _PRELOADED_WHISPER_MODEL
+                self._device = _PRELOADED_DEVICE
+                self._compute_type = _PRELOADED_COMPUTE_TYPE
+                return self._model
+
+            # Yoksa yeni yükle (fallback - normalde buraya düşmemeli)
+            print("[WhisperEngine] UYARI: Önceden yüklenmiş model yok, yeniden yükleniyor...")
+            
             try:
                 from faster_whisper import WhisperModel
             except Exception as e:
@@ -142,7 +233,7 @@ class WhisperEngine:
                 download_root=str(self.models_dir),
             )
             
-            print(f"[WhisperEngine] Model başarıyla yüklendi!")
+            print("[WhisperEngine] Model başarıyla yüklendi!")
             return self._model
 
     def _detect_device(self) -> Tuple[str, str]:
@@ -153,9 +244,6 @@ class WhisperEngine:
         - Destekliyorsa float16, değilse float32
         - GPU yoksa veya hata olursa → CPU + int8
         """
-                # GEÇİCİ: CPU modunu zorla (debug için)
-        print("[WhisperEngine] DEBUG: CPU modu zorlanıyor")
-        return "cpu", "int8"
         if self.settings.use_gpu:
             try:
                 import torch

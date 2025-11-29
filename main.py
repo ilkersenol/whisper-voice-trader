@@ -3,6 +3,24 @@ Whisper Voice Trader - Main Entry Point
 """
 import sys
 from pathlib import Path
+
+# =======================================================
+# KRITIK: Whisper modelini QApplication'dan ÖNCE yükle
+# Bu, CUDA + PyQt5 çakışmasını önler
+# =======================================================
+print("[STARTUP] Whisper modeli yükleniyor...")
+try:
+    from core.whisper_engine import preload_whisper_model
+    _whisper_loaded = preload_whisper_model("tiny")
+    if _whisper_loaded:
+        print("[STARTUP] Whisper modeli hazır!")
+    else:
+        print("[STARTUP] Whisper modeli yüklenemedi, sesli komutlar çalışmayacak.")
+except Exception as e:
+    print(f"[STARTUP] Whisper yükleme hatası: {e}")
+    _whisper_loaded = False
+# =======================================================
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog
 from PyQt5.QtCore import Qt
 import assets.resources_rc
@@ -18,8 +36,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ui.generated.ui_main_window import Ui_MainWindow
 from database.db_manager import get_db
 from utils.logger import get_logger
-from core.exchange_manager import get_exchange_manager
-from database.db_manager import get_db
 from core.exchange_manager import get_exchange_manager
 from core.order_executor import OrderExecutor, OrderParams, OrderResult
 from utils.config_manager import ConfigManager
@@ -61,20 +77,14 @@ class MainWindow(QMainWindow):
         self.connect_button_actions()
 
         # Sesli komutlar için Whisper motoru ve dinleyici
-       # GEÇİCİ DEVRE DIŞI - DEBUG
-        self.whisper_engine = None
-        self.voice_listener = None
-        self._whisper_ready = False
-        logger.info("Whisper DEVRE DISI (debug modu)")
-       # Sesli komutlar için Whisper motoru ve dinleyici
-       # voice_settings = WhisperSettings(
-       #     model_size="tiny",     # şimdilik sabit, sonra Preferences'tan alacağız
-       #     use_gpu=True,          # GPU checkbox ayarına göre güncelleyeceğiz
-       #     language="tr",
-       # )
-       # self.whisper_engine = WhisperEngine(voice_settings)
-       # self.voice_listener: VoiceListener = None
-       # self._whisper_ready = False
+        voice_settings = WhisperSettings(
+            model_size="tiny",
+            use_gpu=True,
+            language="tr",
+        )
+        self.whisper_engine = WhisperEngine(voice_settings)
+        self.voice_listener: VoiceListener = None
+        self._whisper_ready = _whisper_loaded  # Global değişkenden al
 
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
@@ -656,6 +666,16 @@ class MainWindow(QMainWindow):
     def on_voice_order_clicked(self):
         """Kısa süreli ses kaydı başlatır ve sonucu Whisper ile çözer."""
         try:
+            # Whisper hazır mı kontrol et
+            if not self._whisper_ready:
+                QMessageBox.warning(
+                    self,
+                    "Whisper Hazır Değil",
+                    "Sesli komut motoru henüz yüklenmedi.\n"
+                    "Lütfen birkaç saniye bekleyin veya uygulamayı yeniden başlatın."
+                )
+                return
+            
             # Zaten bir dinleyici çalışıyorsa tekrar başlatma
             if hasattr(self, "voice_listener") and self.voice_listener is not None:
                 if self.voice_listener.isRunning():
@@ -758,7 +778,6 @@ class MainWindow(QMainWindow):
         )
         # Durumu pasife çek
         self.on_voice_status_changed("idle")
-
 
 
 
@@ -1098,51 +1117,64 @@ class MainWindow(QMainWindow):
                 if hasattr(self.ui, "sliderLeverage"):
                     leverage = int(self.ui.sliderLeverage.value())
 
+                # Tab'a göre order_type + fiyat
                 order_type = "market"
                 price = None
-                amount = None
 
-                # Limit tabı
-                if active_tab == 0:
+                if active_tab == 0:  # Limit
                     order_type = "limit"
                     if hasattr(self.ui, "spinLimitPrice"):
                         price = float(self.ui.spinLimitPrice.value())
-                    if hasattr(self.ui, "spinLimitAmount"):
-                        amount = float(self.ui.spinLimitAmount.value())
-
-                # Market tabı
-                elif active_tab == 1:
+                elif active_tab == 1:  # Market
                     order_type = "market"
-                    if hasattr(self.ui, "spinMarketAmount"):
-                        amount = float(self.ui.spinMarketAmount.value())
+                    price = None
+                elif active_tab == 2:  # Stop
+                    order_type = "stop"
+                    if hasattr(self.ui, "spinStopPrice"):
+                        price = float(self.ui.spinStopPrice.value())
 
-                # Stop tabı (şimdilik desteklemiyoruz)
-                elif active_tab == 2:
+                # Miktar: Her tab'da (potansiyel olarak) farklı spinbox olabilir ama
+                # şimdilik tek spinAmount varsayıyoruz.
+                amount = 0.0
+                if hasattr(self.ui, "spinAmount"):
+                    amount = float(self.ui.spinAmount.value())
+
+                # --- ÖN KONTROLLER ---
+                if not symbol:
+                    QMessageBox.warning(self, "Uyarı", "Lütfen bir sembol seçin.")
+                    return
+
+                if amount <= 0:
+                    QMessageBox.warning(self, "Uyarı", "Geçerli bir miktar girin (> 0).")
+                    return
+
+                if leverage is None or leverage < 1:
+                    leverage = 10  # Varsayılan
+
+                if order_type == "limit" and (price is None or price <= 0):
                     QMessageBox.warning(
-                        self,
-                        "Henüz desteklenmiyor",
-                        "Stop emir akışı backend tarafında henüz hazır değil.",
+                        self, "Uyarı", "Limit emir için geçerli bir fiyat girin."
                     )
                     return
 
-                # Basit UI kontrolleri
-                if not symbol:
-                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen bir sembol seçin.")
+                if order_type == "stop" and (price is None or price <= 0):
+                    QMessageBox.warning(
+                        self, "Uyarı", "Stop emir için geçerli bir tetik fiyatı girin."
+                    )
                     return
 
-                if amount is None or amount <= 0:
-                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen sıfırdan büyük miktar girin.")
-                    return
-
-                if leverage is None or leverage <= 0:
-                    QMessageBox.warning(self, "Eksik bilgi", "Lütfen geçerli bir kaldıraç seçin.")
+                # Stop emir türünü backend henüz tam desteklemiyor; market / limit dışı reddedebilir.
+                if order_type not in ("market", "limit"):
+                    QMessageBox.warning(
+                        self, "Desteklenmiyor", f"{order_type.upper()} türü henüz desteklenmiyor."
+                    )
                     return
 
                 logger.info(
-                    "UI order click: side=%s type=%s symbol=%s amount=%s price=%s lev=%s",
+                    "UI Order -> symbol=%s, side=%s, order_type=%s, amount=%s, price=%s, leverage=%s",
+                    symbol,
                     side,
                     order_type,
-                    symbol,
                     amount,
                     price,
                     leverage,
@@ -1337,24 +1369,11 @@ def main():
     app.setOrganizationName("Creagent")
 
     window = MainWindow()
-# Show window FIRST
+    # Show window
     window.showMaximized()
     
     logger.info("Application started successfully (Maximized)")
     
-    # Whisper modelini pencere açıldıktan sonra yükle
-   # def load_whisper_delayed():
-   #     try:
-   #         logger.info("Whisper modeli yükleniyor (gecikmeli)...")
-   #         window.whisper_engine.preload_model()
-   #         window._whisper_ready = True
-   #         logger.info("Whisper modeli hazır!")
-   #     except Exception as e:
-   #         logger.error(f"Whisper modeli yüklenemedi: {e}")
-   #         window._whisper_ready = False
-   # 
-   # from PyQt5.QtCore import QTimer
-   # QTimer.singleShot(1000, load_whisper_delayed)
     return app.exec_()
 
 if __name__ == "__main__":
