@@ -153,6 +153,9 @@ class WhisperEngine:
         - Destekliyorsa float16, değilse float32
         - GPU yoksa veya hata olursa → CPU + int8
         """
+                # GEÇİCİ: CPU modunu zorla (debug için)
+        print("[WhisperEngine] DEBUG: CPU modu zorlanıyor")
+        return "cpu", "int8"
         if self.settings.use_gpu:
             try:
                 import torch

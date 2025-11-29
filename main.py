@@ -67,12 +67,8 @@ class MainWindow(QMainWindow):
         )
         self.whisper_engine = WhisperEngine(voice_settings)
         self.voice_listener: VoiceListener = None
-        try:
-            logger.info("Whisper modeli önceden yükleniyor...")
-            self.whisper_engine.preload_model()
-            logger.info("Whisper modeli hazır!")
-        except Exception as e:
-            logger.warning(f"Whisper modeli yüklenemedi: {e}")
+        self._whisper_ready = False
+
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
 
@@ -1332,20 +1328,26 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Whisper Voice Trader")
     app.setOrganizationName("Creagent")
-    
-    # Create main window
+
     window = MainWindow()
-    
-    # Show window FIRST
+# Show window FIRST
     window.showMaximized()
     
     logger.info("Application started successfully (Maximized)")
     
-    # Load connection status AFTER window is shown (async)
-    from PyQt5.QtCore import QTimer
-  # QTimer.singleShot(100, window.load_connection_status)
+    # Whisper modelini pencere açıldıktan sonra yükle
+    def load_whisper_delayed():
+        try:
+            logger.info("Whisper modeli yükleniyor (gecikmeli)...")
+            window.whisper_engine.preload_model()
+            window._whisper_ready = True
+            logger.info("Whisper modeli hazır!")
+        except Exception as e:
+            logger.error(f"Whisper modeli yüklenemedi: {e}")
+            window._whisper_ready = False
     
-    # Start event loop
+    from PyQt5.QtCore import QTimer
+    QTimer.singleShot(1000, load_whisper_delayed)
     return app.exec_()
 
 if __name__ == "__main__":
