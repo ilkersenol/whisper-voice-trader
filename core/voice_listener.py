@@ -54,7 +54,8 @@ class ListenerSettings:
     passive_chunk_duration: float = 2.0     # Pasif modda chunk süresi
     active_chunk_duration: float = 5.0      # Aktif modda chunk süresi
     sample_rate: int = 16000
-    device: Optional[int] = None            # Mikrofon cihazı
+    device: Optional[int] = None            # Mikrofon cihazı (-1 = varsayılan)
+    sensitivity: int = 5                    # Ses hassasiyeti (1-10)
     
     def __post_init__(self):
         # Wake word varyantları
@@ -65,6 +66,10 @@ class ListenerSettings:
                 "vispır", "visper", "wisper", "vısper",
                 "whisper", "wispır", "hvisper",
             ]
+        
+        # Device -1 ise None yap (varsayılan mikrofon)
+        if self.device == -1:
+            self.device = None
 
 
 class VoiceListener(QThread):
@@ -240,8 +245,12 @@ class VoiceListener(QThread):
             level = self._calculate_audio_level(audio)
             self.audio_level.emit(level)
             
+            # Hassasiyete göre eşik hesapla (1-10 → 15-1 eşik)
+            # Düşük hassasiyet = yüksek eşik, yüksek hassasiyet = düşük eşik
+            threshold = max(1, 16 - self.settings.sensitivity)
+            
             # Sessizse atla (CPU tasarrufu)
-            if level < 5:
+            if level < threshold:
                 return
             
             # Transcribe
@@ -299,8 +308,11 @@ class VoiceListener(QThread):
             level = self._calculate_audio_level(audio)
             self.audio_level.emit(level)
             
+            # Hassasiyete göre eşik
+            threshold = max(1, 16 - self.settings.sensitivity)
+            
             # Sessizse timeout'a doğru devam et
-            if level < 3:
+            if level < threshold:
                 logger.debug("[Active] Sessizlik algılandı")
                 return
             

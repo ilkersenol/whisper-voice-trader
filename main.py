@@ -95,12 +95,18 @@ class MainWindow(QMainWindow):
         
         # TTS Engine başlat
         tts_enabled = self.config.get('tts.enabled', True)
-        tts_rate = self.config.get('tts.rate', 150)
+        tts_speed = self.config.get('tts.speed', 100)
+        # TTS rate: speed% -> gerçek rate (100 = 150, yani varsayılan)
+        # 50% = 75, 100% = 150, 200% = 300
+        tts_rate = int(150 * tts_speed / 100)
         self.tts_engine = get_tts_engine(
             enabled=tts_enabled,
             language=language,
             rate=tts_rate,
         )
+        
+        # Onay bekleme süresi (command handler'da kullanılacak)
+        self.confirmation_timeout = self.config.get('tts.confirmation_timeout', 10)
         
         # Command Parser başlat
         self.command_parser = CommandParser(default_symbol="BTCUSDT")
@@ -710,8 +716,11 @@ class MainWindow(QMainWindow):
                     return
 
             # Yeni dinleyici oluştur (Wake Word destekli)
+            # Tüm ayarları config'den oku
             wake_word = self.config.get('whisper.wake_word', 'Whisper')
             active_duration = self.config.get('whisper.active_mode_duration', 15)
+            mic_device = self.config.get('whisper.microphone_device', -1)
+            sensitivity = self.config.get('whisper.sensitivity', 5)
             
             listener_settings = ListenerSettings(
                 wake_word=wake_word,
@@ -719,6 +728,8 @@ class MainWindow(QMainWindow):
                 passive_chunk_duration=2.0,
                 active_chunk_duration=5.0,
                 sample_rate=16000,
+                device=mic_device if mic_device != -1 else None,
+                sensitivity=sensitivity,
             )
             
             self.voice_listener = VoiceListener(
