@@ -41,7 +41,9 @@ from core.order_executor import OrderExecutor, OrderParams, OrderResult
 from utils.config_manager import ConfigManager
 from ui.generated.ui_command_keywords_dialog import Ui_CommandKeywordsDialog  
 from core.whisper_engine import WhisperEngine, WhisperSettings
-from core.voice_listener import VoiceListener
+from core.voice_listener import VoiceListener, ListenerSettings
+from core.tts_engine import TTSEngine, get_tts_engine
+from core.command_parser import CommandParser, CommandValidator
 
 
 
@@ -77,14 +79,31 @@ class MainWindow(QMainWindow):
         self.connect_button_actions()
 
         # Sesli komutlar için Whisper motoru ve dinleyici
+        # Model boyutunu ayarlardan oku
+        model_size = self.config.get('whisper.model_size', 'tiny')
+        use_gpu = self.config.get('whisper.use_gpu', True)
+        language = self.config.get('app.language', 'tr')
+        
         voice_settings = WhisperSettings(
-            model_size="tiny",
-            use_gpu=True,
-            language="tr",
+            model_size=model_size,
+            use_gpu=use_gpu,
+            language=language,
         )
         self.whisper_engine = WhisperEngine(voice_settings)
         self.voice_listener: VoiceListener = None
         self._whisper_ready = _whisper_loaded  # Global değişkenden al
+        
+        # TTS Engine başlat
+        tts_enabled = self.config.get('tts.enabled', True)
+        tts_rate = self.config.get('tts.rate', 150)
+        self.tts_engine = get_tts_engine(
+            enabled=tts_enabled,
+            language=language,
+            rate=tts_rate,
+        )
+        
+        # Command Parser başlat
+        self.command_parser = CommandParser(default_symbol="BTCUSDT")
 
         if hasattr(self.ui, 'comboSymbol'):
             self.ui.comboSymbol.currentIndexChanged.connect(self.on_symbol_changed)
@@ -690,15 +709,29 @@ class MainWindow(QMainWindow):
                     )
                     return
 
-            # Yeni dinleyici oluştur
+            # Yeni dinleyici oluştur (Wake Word destekli)
+            wake_word = self.config.get('whisper.wake_word', 'Whisper')
+            active_duration = self.config.get('whisper.active_mode_duration', 15)
+            
+            listener_settings = ListenerSettings(
+                wake_word=wake_word,
+                active_mode_duration=active_duration,
+                passive_chunk_duration=2.0,
+                active_chunk_duration=5.0,
+                sample_rate=16000,
+            )
+            
             self.voice_listener = VoiceListener(
                 whisper_engine=self.whisper_engine,
-                duration=5.0,          # 5 saniye konuşma süresi
-                sample_rate=16_000,
+                settings=listener_settings,
+                tts_engine=self.tts_engine,
                 parent=self,
             )
             self.voice_listener.transcript_ready.connect(
                 self.on_voice_transcript_ready
+            )
+            self.voice_listener.command_received.connect(
+                self.on_voice_command_received
             )
             self.voice_listener.error_occurred.connect(
                 self.on_voice_error
@@ -706,8 +739,14 @@ class MainWindow(QMainWindow):
             self.voice_listener.status_changed.connect(
                 self.on_voice_status_changed
             )
+            self.voice_listener.wake_word_detected.connect(
+                self.on_wake_word_detected
+            )
+            self.voice_listener.mode_changed.connect(
+                self.on_voice_mode_changed
+            )
 
-            self.voice_listener.start()
+            self.voice_listener.start_passive_listening()
 
         except Exception as e:
             logger.error(f"Voice order start failed: {e}")
@@ -758,20 +797,142 @@ class MainWindow(QMainWindow):
         # ...
 
     def on_voice_status_changed(self, status: str):
-        """VoiceListener durumuna göre Pasif Mod UI'ını günceller."""
+        """VoiceListener durumuna göre UI'ı günceller."""
         try:
             if not hasattr(self.ui, 'lblWakeStatus'):
                 return
 
-            if status == "listening":
-                self.ui.lblWakeStatus.setText("🎙️ Dinleniyor...")
-            elif status == "transcribing":
-                self.ui.lblWakeStatus.setText("🧠 Çözümleniyor...")
-            else:
-                # idle
-                self.ui.lblWakeStatus.setText("🎙️ Pasif Mod")
+            status_texts = {
+                "listening": "🎙️ Dinleniyor...",
+                "transcribing": "🧠 Çözümleniyor...",
+                "passive": "🎙️ Pasif Mod (Wake word bekliyor)",
+                "active": "🎤 Aktif Mod (Komut bekleniyor)",
+                "processing": "🧠 İşleniyor...",
+                "idle": "⏸️ Durduruldu",
+            }
+            
+            text = status_texts.get(status, f"🎙️ {status}")
+            self.ui.lblWakeStatus.setText(text)
+            
         except Exception as e:
             logger.error(f"on_voice_status_changed error: {e}")
+    
+    def on_wake_word_detected(self):
+        """Wake word algılandığında çağrılır."""
+        logger.info("Wake word detected!")
+        try:
+            if hasattr(self.ui, 'lblWakeStatus'):
+                self.ui.lblWakeStatus.setText("🎤 Wake word algılandı!")
+            
+            # Status bar'da bilgi göster
+            self.statusBar().showMessage("🎤 Dinliyorum... Komutunuzu söyleyin.", 5000)
+            
+        except Exception as e:
+            logger.error(f"on_wake_word_detected error: {e}")
+    
+    def on_voice_mode_changed(self, mode: str):
+        """Voice listener modu değiştiğinde çağrılır."""
+        logger.debug(f"Voice mode changed: {mode}")
+        try:
+            if hasattr(self.ui, 'lblWakeStatus'):
+                mode_texts = {
+                    "idle": "⏸️ Durduruldu",
+                    "passive": "🎙️ Pasif Mod",
+                    "active": "🎤 Aktif Mod",
+                    "processing": "🧠 İşleniyor...",
+                }
+                self.ui.lblWakeStatus.setText(mode_texts.get(mode, mode))
+                
+        except Exception as e:
+            logger.error(f"on_voice_mode_changed error: {e}")
+    
+    def on_voice_command_received(self, command_text: str):
+        """
+        Wake word sisteminden gelen komutu işle.
+        CommandParser ile parse edip trading işlemi yap.
+        """
+        logger.info(f"Voice command received: {command_text}")
+        
+        try:
+            # CommandParser ile parse et
+            parsed = self.command_parser.parse(command_text)
+            
+            if not parsed:
+                self.tts_engine.speak_message('not_understood')
+                QMessageBox.information(
+                    self,
+                    "Sesli Komut",
+                    f"Komut anlaşılamadı:\n\"{command_text}\""
+                )
+                return
+            
+            # Komutu doğrula
+            is_valid, errors = CommandValidator.validate(parsed)
+            
+            if not is_valid:
+                error_text = ", ".join(errors)
+                self.tts_engine.speak(f"Hata: {error_text}")
+                QMessageBox.warning(
+                    self,
+                    "Geçersiz Komut",
+                    f"Komut: \"{command_text}\"\n\nHatalar:\n{error_text}"
+                )
+                return
+            
+            # Komut tipine göre işlem yap
+            summary = self.command_parser.format_command_summary(parsed)
+            logger.info(f"Parsed command: {summary}")
+            
+            if parsed.action in ("buy", "sell"):
+                # Trading işlemi - onay iste
+                reply = QMessageBox.question(
+                    self,
+                    "Emir Onayı",
+                    f"{summary}\n\nBu emri onaylıyor musunuz?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                
+                if reply == QMessageBox.Yes:
+                    self.tts_engine.speak_message('command_received')
+                    # TODO: Order executor'a gönder
+                    # self.execute_voice_order(parsed)
+                    QMessageBox.information(
+                        self, "Emir",
+                        f"Emir alındı:\n{summary}\n\n(Paper Trading aktif)"
+                    )
+                else:
+                    self.tts_engine.speak_message('cancelled')
+                    
+            elif parsed.action == "close":
+                self.tts_engine.speak_message('position_closed')
+                QMessageBox.information(self, "Pozisyon", "Pozisyon kapatma komutu alındı.")
+                
+            elif parsed.action == "balance":
+                # Bakiye göster
+                self.tts_engine.speak("Bakiye sorgulama")
+                # TODO: Bakiyeyi TTS ile söyle
+                
+            elif parsed.action == "status":
+                # Durum göster
+                self.tts_engine.speak("Durum sorgulama")
+                # TODO: Pozisyonları göster
+                
+            else:
+                QMessageBox.information(
+                    self,
+                    "Sesli Komut",
+                    f"Komut algılandı:\n{summary}"
+                )
+                
+        except Exception as e:
+            logger.error(f"Voice command processing error: {e}")
+            self.tts_engine.speak_message('error')
+            QMessageBox.critical(
+                self,
+                "Hata",
+                f"Komut işlenirken hata oluştu:\n{e}"
+            )
 
     def on_voice_error(self, message: str):
         logger.error(f"VoiceListener error: {message}")
