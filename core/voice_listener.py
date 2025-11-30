@@ -225,6 +225,11 @@ class VoiceListener(QThread):
         chunk_duration = self.settings.passive_chunk_duration
         frames = int(chunk_duration * self.settings.sample_rate)
         
+        # Device kontrolü - None veya -1 ise varsayılan kullan
+        device = self.settings.device
+        if device == -1:
+            device = None
+        
         try:
             # Kısa kayıt al
             recording = sd.rec(
@@ -232,7 +237,7 @@ class VoiceListener(QThread):
                 samplerate=self.settings.sample_rate,
                 channels=1,
                 dtype="float32",
-                device=self.settings.device,
+                device=device,
             )
             sd.wait()
             
@@ -285,6 +290,11 @@ class VoiceListener(QThread):
         chunk_duration = self.settings.active_chunk_duration
         frames = int(chunk_duration * self.settings.sample_rate)
         
+        # Device kontrolü - None veya -1 ise varsayılan kullan
+        device = self.settings.device
+        if device == -1:
+            device = None
+        
         try:
             self._set_mode(ListenerMode.ACTIVE)
             
@@ -295,7 +305,7 @@ class VoiceListener(QThread):
                 samplerate=self.settings.sample_rate,
                 channels=1,
                 dtype="float32",
-                device=self.settings.device,
+                device=device,
             )
             sd.wait()
             
@@ -435,6 +445,11 @@ class VoiceListener(QThread):
             self.error_occurred.emit("sounddevice yüklü değil")
             return
         
+        # Device kontrolü
+        device = self.settings.device
+        if device == -1:
+            device = None
+        
         try:
             self.status_changed.emit("listening")
             
@@ -444,7 +459,7 @@ class VoiceListener(QThread):
                 samplerate=self.settings.sample_rate,
                 channels=1,
                 dtype="float32",
-                device=self.settings.device,
+                device=device,
             )
             sd.wait()
             
